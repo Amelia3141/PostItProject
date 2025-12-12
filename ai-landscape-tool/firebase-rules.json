@@ -1,0 +1,22 @@
+{
+  "rules": {
+    "notes": {
+      ".read": true,
+      ".write": true,
+      "$noteId": {
+        ".validate": "newData.hasChildren(['id', 'text', 'category', 'timeframe', 'votes', 'tags', 'connections', 'createdAt', 'updatedAt'])"
+      }
+    },
+    "connections": {
+      ".read": true,
+      ".write": true,
+      "$connectionId": {
+        ".validate": "newData.hasChildren(['id', 'sourceId', 'targetId', 'createdAt'])"
+      }
+    },
+    "workshops": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}

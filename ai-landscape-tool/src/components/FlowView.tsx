@@ -157,7 +157,7 @@ export function FlowView({ notes, connections, onNoteClick, onConnect }: FlowVie
       target: conn.targetId,
       style: { stroke: '#667eea', strokeWidth: 2 },
       markerEnd: { type: MarkerType.ArrowClosed, color: '#667eea' },
-      animated: true,
+      animated: false,
     }));
   }, [connections]);
 

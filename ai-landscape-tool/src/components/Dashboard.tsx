@@ -1,19 +1,18 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Note, Category, Timeframe, ViewMode, FilterState } from '@/types';
 import { categoryConfig, timeframeConfig } from '@/data/seed';
 import { useNotes, useConnections, useFilteredNotes, useStats } from '@/lib/hooks';
 import { NoteCard } from './NoteCard';
 import { NoteModal } from './NoteModal';
 import { exportToJSON, exportToCSV, exportToPDF } from '@/lib/export';
-import styles from '@/app/Dashboard.module.css';
 import { DndContext, DragEndEvent } from '@dnd-kit/core';
 import { DraggableNoteCard } from './DraggableNoteCard';
 import { DroppableCell } from './DroppableCell';
 import { FlowView } from './FlowView';
+import styles from '@/app/Dashboard.module.css';
 
-// Generate pseudo-random rotation for cards
 function getRotation(id: string): number {
   const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return ((hash % 13) - 6) * 0.1;
@@ -38,7 +37,6 @@ export function Dashboard() {
   const filteredNotes = useFilteredNotes(notes, filters);
   const stats = useStats(notes);
 
-  // Seed database if empty
   useEffect(() => {
     if (!loading && notes.length === 0) {
       seed();
@@ -71,20 +69,16 @@ export function Dashboard() {
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
-  const { active, over } = event;
-  if (!over) return;
-  
-  const noteId = active.id as string;
-  const [newCategory, newTimeframe] = (over.id as string).split('-') as [Category, Timeframe];
-  
-  const note = notes.find(n => n.id === noteId);
-  if (note && (note.category !== newCategory || note.timeframe !== newTimeframe)) {
-    await editNote(noteId, { category: newCategory, timeframe: newTimeframe });
-  }
-};
-
-  const handleStartConnection = (noteId: string) => {
-    setConnectingFrom(noteId);
+    const { active, over } = event;
+    if (!over) return;
+    
+    const noteId = active.id as string;
+    const [newCategory, newTimeframe] = (over.id as string).split('-') as [Category, Timeframe];
+    
+    const note = notes.find(n => n.id === noteId);
+    if (note && (note.category !== newCategory || note.timeframe !== newTimeframe)) {
+      await editNote(noteId, { category: newCategory, timeframe: newTimeframe });
+    }
   };
 
   const getNotesByCell = (category: Category, timeframe: Timeframe) => {
@@ -103,8 +97,6 @@ export function Dashboard() {
 
   return (
     <div className={styles.container}>
-      <button className={styles.logoutBtn}>Logout</button>
-      
       <header className={styles.header}>
         <h1 className={styles.title}>AI Landscape</h1>
         <p className={styles.subtitle}>
@@ -113,7 +105,6 @@ export function Dashboard() {
         </p>
       </header>
 
-      {/* Stats */}
       <div className={styles.stats}>
         <div className={styles.stat}>
           <div className={styles.statNumber}>{stats.totalIdeas}</div>
@@ -129,58 +120,59 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Top Voted */}
       <div className={styles.topVoted}>
         <div className={styles.topVotedHeader}>
           <span className={styles.trophyIcon}>🏆</span>
           <h2>Top Voted Ideas</h2>
         </div>
         <div className={styles.topVotedList}>
-          {stats.topVoted.map((note, index) => (
-            <div
-              key={note.id}
-              className={`${styles.topVotedItem} ${styles[categoryConfig[note.category].colour]}`}
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <div className={styles.topVotedRank}>#{index + 1}</div>
-              <div className={styles.topVotedContent}>
-                <p className={styles.topVotedText}>{note.text}</p>
-                <div className={styles.topVotedMeta}>
-                  <span className={styles.topVotedCategory}>{note.category}</span>
-                  <span className={styles.topVotedTime}>
-                    {timeframeConfig[note.timeframe].label}
-                  </span>
+          {stats.topVoted.map((note, index) => {
+            const category = note.category || 'opportunities';
+            const colour = categoryConfig[category]?.colour || 'pink';
+            return (
+              <div
+                key={note.id}
+                className={`${styles.topVotedItem} ${styles[colour]}`}
+              >
+                <div className={styles.topVotedRank}>#{index + 1}</div>
+                <div className={styles.topVotedContent}>
+                  <p className={styles.topVotedText}>{note.text}</p>
+                  <div className={styles.topVotedMeta}>
+                    <span className={styles.topVotedCategory}>{category}</span>
+                    <span className={styles.topVotedTime}>
+                      {timeframeConfig[note.timeframe]?.label || note.timeframe}
+                    </span>
+                  </div>
+                </div>
+                <div className={styles.topVotedDots}>
+                  <span className={styles.dotCount}>{note.votes || 0}</span>
+                  <span className={styles.dotLabel}>votes</span>
                 </div>
               </div>
-              <div className={styles.topVotedDots}>
-                <span className={styles.dotCount}>{note.votes}</span>
-                <span className={styles.dotLabel}>votes</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      {/* Controls */}
       <div className={styles.controls}>
         <div className={styles.viewToggle}>
           <button
             className={`${styles.viewBtn} ${viewMode === 'grid' ? styles.active : ''}`}
             onClick={() => setViewMode('grid')}
           >
-            <span className={styles.viewIcon}>▦</span> Grid
+            Grid
           </button>
           <button
             className={`${styles.viewBtn} ${viewMode === 'board' ? styles.active : ''}`}
             onClick={() => setViewMode('board')}
           >
-            <span className={styles.viewIcon}>☰</span> Board
+            Board
           </button>
           <button
             className={`${styles.viewBtn} ${viewMode === 'flow' ? styles.active : ''}`}
             onClick={() => setViewMode('flow')}
           >
-            <span className={styles.viewIcon}>⟶</span> Flow
+            Flow
           </button>
         </div>
 
@@ -189,9 +181,7 @@ export function Dashboard() {
           placeholder="Search ideas..."
           className={styles.searchInput}
           value={filters.searchQuery}
-          onChange={(e) =>
-            setFilters((f) => ({ ...f, searchQuery: e.target.value }))
-          }
+          onChange={(e) => setFilters((f) => ({ ...f, searchQuery: e.target.value }))}
         />
 
         <div className={styles.filterGroup}>
@@ -207,9 +197,7 @@ export function Dashboard() {
               <button
                 key={key}
                 className={`${styles.filterBtn} ${filters.timeframe === key ? styles.active : ''}`}
-                onClick={() =>
-                  setFilters((f) => ({ ...f, timeframe: key as Timeframe }))
-                }
+                onClick={() => setFilters((f) => ({ ...f, timeframe: key as Timeframe }))}
               >
                 {config.label}
               </button>
@@ -227,142 +215,88 @@ export function Dashboard() {
             <button
               key={key}
               className={`${styles.filterBtn} ${filters.category === key ? styles.active : ''}`}
-              onClick={() =>
-                setFilters((f) => ({ ...f, category: key as Category }))
-              }
+              onClick={() => setFilters((f) => ({ ...f, category: key as Category }))}
             >
               {config.label}
             </button>
           ))}
         </div>
 
-        <button
-          className={`${styles.filterBtn} ${styles.connectBtn} ${filters.showConnections ? styles.active : ''}`}
-          onClick={() =>
-            setFilters((f) => ({ ...f, showConnections: !f.showConnections }))
-          }
-        >
-          🔗 Show Connections
-        </button>
-
-         <button className={styles.addNoteBtn} onClick={handleAddNote}>
+        <button className={styles.addNoteBtn} onClick={handleAddNote}>
           + Add Note
         </button>
-        <button className={styles.filterBtn} onClick={() => exportToJSON(notes)}>📥 JSON</button>
-        <button className={styles.filterBtn} onClick={() => exportToCSV(notes)}>📥 CSV</button>
-        <button className={styles.filterBtn} onClick={() => exportToPDF(notes)}>📥 PDF</button>
+        <button className={styles.filterBtn} onClick={() => exportToJSON(notes)}>JSON</button>
+        <button className={styles.filterBtn} onClick={() => exportToCSV(notes)}>CSV</button>
+        <button className={styles.filterBtn} onClick={() => exportToPDF(notes)}>PDF</button>
       </div>
 
-      {/* Board View */}
       {viewMode === 'board' && (
-        <div className={`${styles.board} ${styles.fadeIn}`}>
-          <div className={styles.boardHeader}>
-            <div className={styles.boardRowLabel}></div>
-            <div className={styles.timeframeHeader}>Next 10 months</div>
-            <div className={styles.timeframeHeader}>3 years</div>
-            <div className={styles.timeframeHeader}>10 years</div>
-          </div>
-
-          {/* Opportunities Row */}
-          <div className={`${styles.boardRow} ${styles.pinkRow}`}>
-            <div className={styles.boardRowLabel}>
-              <div className={`${styles.categoryBadge} ${styles.pink}`}>
-                Opportunities
-              </div>
-              <p className={styles.categoryQuestion}>
-                {categoryConfig.opportunities.question}
-              </p>
+        <DndContext onDragEnd={handleDragEnd}>
+          <div className={`${styles.board} ${styles.fadeIn}`}>
+            <div className={styles.boardHeader}>
+              <div className={styles.boardRowLabel}></div>
+              <div className={styles.timeframeHeader}>Next 10 months</div>
+              <div className={styles.timeframeHeader}>3 years</div>
+              <div className={styles.timeframeHeader}>10 years</div>
             </div>
-            {(['10months', '3years', '10years'] as Timeframe[]).map((tf) => (
-              <div key={tf} className={styles.boardCell}>
-                {getNotesByCell('opportunities', tf).map((note) => (
-                  <NoteCard
-                    key={note.id}
-                    note={note}
-                    onClick={() => handleNoteClick(note)}
-                    isSelected={selectedNote?.id === note.id}
-                    isConnecting={connectingFrom === note.id}
-                    rotation={getRotation(note.id)}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
 
-          {/* Enablers Row */}
-          <div className={`${styles.boardRow} ${styles.blueRow}`}>
-            <div className={styles.boardRowLabel}>
-              <div className={`${styles.categoryBadge} ${styles.blue}`}>
-                Enablers
+            <div className={`${styles.boardRow} ${styles.pinkRow}`}>
+              <div className={styles.boardRowLabel}>
+                <div className={`${styles.categoryBadge} ${styles.pink}`}>Opportunities</div>
               </div>
-              <p className={styles.categoryQuestion}>
-                {categoryConfig.enablers.question}
-              </p>
+              {(['10months', '3years', '10years'] as Timeframe[]).map((tf) => (
+                <DroppableCell key={tf} category="opportunities" timeframe={tf}>
+                  {getNotesByCell('opportunities', tf).map((note) => (
+                    <DraggableNoteCard
+                      key={note.id}
+                      note={note}
+                      onClick={() => handleNoteClick(note)}
+                      rotation={getRotation(note.id)}
+                    />
+                  ))}
+                </DroppableCell>
+              ))}
             </div>
-            {(['10months', '3years', '10years'] as Timeframe[]).map((tf) => (
-              <div key={tf} className={styles.boardCell}>
-                {getNotesByCell('enablers', tf).map((note) => (
-                  <NoteCard
-                    key={note.id}
-                    note={note}
-                    onClick={() => handleNoteClick(note)}
-                    isSelected={selectedNote?.id === note.id}
-                    isConnecting={connectingFrom === note.id}
-                    rotation={getRotation(note.id)}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
 
-          {/* Actors Row */}
-          <div className={`${styles.boardRow} ${styles.yellowRow}`}>
-            <div className={styles.boardRowLabel}>
-              <div className={`${styles.categoryBadge} ${styles.yellow}`}>
-                Actors
+            <div className={`${styles.boardRow} ${styles.blueRow}`}>
+              <div className={styles.boardRowLabel}>
+                <div className={`${styles.categoryBadge} ${styles.blue}`}>Enablers</div>
               </div>
-              <p className={styles.categoryQuestion}>
-                {categoryConfig.actors.question}
-              </p>
+              {(['10months', '3years', '10years'] as Timeframe[]).map((tf) => (
+                <DroppableCell key={tf} category="enablers" timeframe={tf}>
+                  {getNotesByCell('enablers', tf).map((note) => (
+                    <DraggableNoteCard
+                      key={note.id}
+                      note={note}
+                      onClick={() => handleNoteClick(note)}
+                      rotation={getRotation(note.id)}
+                    />
+                  ))}
+                </DroppableCell>
+              ))}
             </div>
-            {(['10months', '3years', '10years'] as Timeframe[]).map((tf) => (
-              <div key={tf} className={styles.boardCell}>
-                {getNotesByCell('actors', tf).map((note) => (
-                  <NoteCard
-                    key={note.id}
-                    note={note}
-                    onClick={() => handleNoteClick(note)}
-                    isSelected={selectedNote?.id === note.id}
-                    isConnecting={connectingFrom === note.id}
-                    rotation={getRotation(note.id)}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
 
-          {/* Foundational Section */}
-          <div className={styles.foundationalSection}>
-            <div className={styles.foundationalLabel}>
-              Foundational (Time-agnostic)
-            </div>
-            <div className={styles.foundationalCards}>
-              {getFoundationalNotes().map((note) => (
-                <NoteCard
-                  key={note.id}
-                  note={note}
-                  onClick={() => handleNoteClick(note)}
-                  isSelected={selectedNote?.id === note.id}
-                  isConnecting={connectingFrom === note.id}
-                  rotation={getRotation(note.id)}
-                />
+            <div className={`${styles.boardRow} ${styles.yellowRow}`}>
+              <div className={styles.boardRowLabel}>
+                <div className={`${styles.categoryBadge} ${styles.yellow}`}>Actors</div>
+              </div>
+              {(['10months', '3years', '10years'] as Timeframe[]).map((tf) => (
+                <DroppableCell key={tf} category="actors" timeframe={tf}>
+                  {getNotesByCell('actors', tf).map((note) => (
+                    <DraggableNoteCard
+                      key={note.id}
+                      note={note}
+                      onClick={() => handleNoteClick(note)}
+                      rotation={getRotation(note.id)}
+                    />
+                  ))}
+                </DroppableCell>
               ))}
             </div>
           </div>
-        </div>
+        </DndContext>
       )}
 
-      {/* Grid View */}
       {viewMode === 'grid' && (
         <div className={styles.gridView}>
           {filteredNotes.map((note) => (
@@ -370,30 +304,21 @@ export function Dashboard() {
               key={note.id}
               note={note}
               onClick={() => handleNoteClick(note)}
-              isSelected={selectedNote?.id === note.id}
               rotation={getRotation(note.id)}
             />
           ))}
-          {filteredNotes.length === 0 && (
-            <div className={styles.emptyState}>
-              No notes match your filters
-            </div>
-          )}
         </div>
       )}
 
       {viewMode === 'flow' && (
-  <FlowView
-    notes={filteredNotes}
-    connections={connections}
-    onNoteClick={handleNoteClick}
-  />
-)}
-      <footer className={styles.footer}>
-        <p>Transcribed from workshop sticky notes</p>
-      </footer>
+        <FlowView
+          notes={filteredNotes}
+          connections={connections}
+          onNoteClick={handleNoteClick}
+          onConnect={addConnection}
+        />
+      )}
 
-      {/* Note Modal */}
       <NoteModal
         note={selectedNote}
         isOpen={isModalOpen}

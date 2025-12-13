@@ -111,7 +111,7 @@ export async function createConnection(
     id,
     sourceId,
     targetId,
-    label,
+    label: label || null,
     createdAt: Date.now(),
   };
   

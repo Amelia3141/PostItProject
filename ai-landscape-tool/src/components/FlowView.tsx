@@ -9,7 +9,9 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   MarkerType,
-  Panel,
+  Connection as FlowConnection,
+  Handle,
+  Position,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Note, Connection, Category, Timeframe } from '@/types';
@@ -43,11 +45,28 @@ const timeframeLabels: Record<Timeframe, string> = {
 const timeframeOrder: Timeframe[] = ['10months', '3years', '10years', 'foundational'];
 const categoryOrder: Category[] = ['opportunities', 'enablers', 'actors'];
 
-export function FlowView({ notes, connections, onNoteClick, onConnect }: FlowViewProps) {
-  const [connectMode, setConnectMode] = useState(false);
-  const [connectSource, setConnectSource] = useState<string | null>(null);
+function NoteNode({ data }: { data: { label: string; note: Note; background: string; border: string } }) {
+  return (
+    <div style={{
+      background: data.background,
+      border: `1px solid ${data.border}`,
+      borderRadius: '6px',
+      padding: '8px',
+      fontSize: '10px',
+      width: 150,
+      cursor: 'pointer',
+    }}>
+      <Handle type="target" position={Position.Top} style={{ background: '#667eea' }} />
+      <div>{data.label}</div>
+      <Handle type="source" position={Position.Bottom} style={{ background: '#667eea' }} />
+    </div>
+  );
+}
 
-  const buildNodes = useCallback((source: string | null): Node[] => {
+const nodeTypes = { noteNode: NoteNode };
+
+export function FlowView({ notes, connections, onNoteClick, onConnect }: FlowViewProps) {
+  const buildNodes = useCallback((): Node[] => {
     const nodes: Node[] = [];
     const cellCounts: Record<string, number> = {};
     
@@ -115,24 +134,15 @@ export function FlowView({ notes, connections, onNoteClick, onConnect }: FlowVie
       const x = 180 + colIndex * colWidth + col * (nodeWidth + padding);
       const y = 70 + rowIndex * rowHeight + row * (nodeHeight + padding);
 
-      const isSource = source === note.id;
-
       nodes.push({
         id: note.id,
+        type: 'noteNode',
         position: { x, y },
         data: { 
           label: note.text.length > 35 ? note.text.substring(0, 35) + '...' : note.text,
           note,
-        },
-        style: {
           background: categoryColors[note.category],
-          border: isSource ? '2px solid #667eea' : `1px solid ${categoryBorders[note.category]}`,
-          borderRadius: '6px',
-          padding: '8px',
-          fontSize: '10px',
-          width: nodeWidth,
-          cursor: 'pointer',
-          boxShadow: isSource ? '0 0 0 3px rgba(102, 126, 234, 0.3)' : 'none',
+          border: categoryBorders[note.category],
         },
       });
     });
@@ -151,32 +161,29 @@ export function FlowView({ notes, connections, onNoteClick, onConnect }: FlowVie
     }));
   }, [connections]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(buildNodes(null));
+  const [nodes, setNodes, onNodesChange] = useNodesState(buildNodes());
   const [edges, setEdges, onEdgesChange] = useEdgesState(buildEdges());
 
   useEffect(() => {
-    setNodes(buildNodes(connectSource));
-  }, [notes, connectSource, buildNodes, setNodes]);
+    setNodes(buildNodes());
+  }, [notes, buildNodes, setNodes]);
 
   useEffect(() => {
     setEdges(buildEdges());
   }, [connections, buildEdges, setEdges]);
 
+  const handleConnect = useCallback((params: FlowConnection) => {
+    if (params.source && params.target) {
+      onConnect(params.source, params.target);
+    }
+  }, [onConnect]);
+
   const onNodeClick = useCallback((_: any, node: Node) => {
     if (node.id.startsWith('header-') || node.id.startsWith('label-')) return;
-    
-    if (connectMode) {
-      if (!connectSource) {
-        setConnectSource(node.id);
-      } else if (connectSource !== node.id) {
-        onConnect(connectSource, node.id);
-        setConnectSource(null);
-        setConnectMode(false);
-      }
-    } else if (node.data.note) {
+    if (node.data.note) {
       onNoteClick(node.data.note);
     }
-  }, [connectMode, connectSource, onNoteClick, onConnect]);
+  }, [onNoteClick]);
 
   return (
     <div style={{ width: '100%', height: '700px', background: 'white', borderRadius: '12px', border: '1px solid #e9ecef' }}>
@@ -185,51 +192,15 @@ export function FlowView({ notes, connections, onNoteClick, onConnect }: FlowVie
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onConnect={handleConnect}
         onNodeClick={onNodeClick}
+        nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.1 }}
+        connectionLineStyle={{ stroke: '#667eea', strokeWidth: 2 }}
       >
         <Background color="#f1f3f4" gap={20} />
         <Controls />
-        <Panel position="top-right">
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              onClick={() => { setConnectMode(!connectMode); setConnectSource(null); }}
-              style={{
-                padding: '8px 16px',
-                background: connectMode ? '#667eea' : 'white',
-                color: connectMode ? 'white' : '#1a1a2e',
-                border: '1px solid #e9ecef',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: '500',
-              }}
-            >
-              {connectMode 
-                ? connectSource 
-                  ? 'Click target...' 
-                  : 'Click source...'
-                : '🔗 Connect'}
-            </button>
-            {connectMode && (
-              <button
-                onClick={() => { setConnectMode(false); setConnectSource(null); }}
-                style={{
-                  padding: '8px 16px',
-                  background: '#e53e3e',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                }}
-              >
-                Cancel
-              </button>
-            )}
-          </div>
-        </Panel>
       </ReactFlow>
     </div>
   );

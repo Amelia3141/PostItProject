@@ -6,7 +6,12 @@ import { categoryConfig, timeframeConfig } from '@/data/seed';
 import { useNotes, useConnections, useFilteredNotes, useStats } from '@/lib/hooks';
 import { NoteCard } from './NoteCard';
 import { NoteModal } from './NoteModal';
+import { exportToJSON, exportToCSV, exportToPDF } from '@/lib/export';
 import styles from '@/app/Dashboard.module.css';
+import { DndContext, DragEndEvent } from '@dnd-kit/core';
+import { DraggableNoteCard } from './DraggableNoteCard';
+import { DroppableCell } from './DroppableCell';
+import { FlowView } from './FlowView';
 
 // Generate pseudo-random rotation for cards
 function getRotation(id: string): number {
@@ -64,6 +69,19 @@ export function Dashboard() {
       await addNote(data);
     }
   };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+  const { active, over } = event;
+  if (!over) return;
+  
+  const noteId = active.id as string;
+  const [newCategory, newTimeframe] = (over.id as string).split('-') as [Category, Timeframe];
+  
+  const note = notes.find(n => n.id === noteId);
+  if (note && (note.category !== newCategory || note.timeframe !== newTimeframe)) {
+    await editNote(noteId, { category: newCategory, timeframe: newTimeframe });
+  }
+};
 
   const handleStartConnection = (noteId: string) => {
     setConnectingFrom(noteId);
@@ -227,9 +245,12 @@ export function Dashboard() {
           🔗 Show Connections
         </button>
 
-        <button className={styles.addNoteBtn} onClick={handleAddNote}>
+         <button className={styles.addNoteBtn} onClick={handleAddNote}>
           + Add Note
         </button>
+        <button className={styles.filterBtn} onClick={() => exportToJSON(notes)}>📥 JSON</button>
+        <button className={styles.filterBtn} onClick={() => exportToCSV(notes)}>📥 CSV</button>
+        <button className={styles.filterBtn} onClick={() => exportToPDF(notes)}>📥 PDF</button>
       </div>
 
       {/* Board View */}
@@ -361,26 +382,13 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Flow View (placeholder) */}
       {viewMode === 'flow' && (
-        <div className={styles.flowView}>
-          <p style={{ textAlign: 'center', color: 'var(--grey-500)' }}>
-            Flow view with connections coming soon...
-          </p>
-          <div className={styles.gridView}>
-            {filteredNotes.map((note) => (
-              <NoteCard
-                key={note.id}
-                note={note}
-                onClick={() => handleNoteClick(note)}
-                isSelected={selectedNote?.id === note.id}
-                rotation={0}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
+  <FlowView
+    notes={filteredNotes}
+    connections={connections}
+    onNoteClick={handleNoteClick}
+  />
+)}
       <footer className={styles.footer}>
         <p>Transcribed from workshop sticky notes</p>
       </footer>

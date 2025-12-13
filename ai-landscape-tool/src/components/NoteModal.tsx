@@ -33,8 +33,8 @@ export function NoteModal({
       setText(note.text);
       setCategory(note.category);
       setTimeframe(note.timeframe);
-      setTagsInput(note.tags.join(', '));
-      setVotes(note.votes);
+      setTagsInput((note.tags || []).join(', '));
+      setVotes(note.votes || 0);
     } else {
       setText('');
       setCategory('opportunities');

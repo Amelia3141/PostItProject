@@ -10,7 +10,7 @@ import {
   DataSnapshot,
   DatabaseReference,
 } from 'firebase/database';
-import { getDb as getFirebaseDatabase } from './firebase';
+import { getDb } from './firebase';
 import { Note, Connection, Workshop } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -18,13 +18,10 @@ const NOTES_PATH = 'notes';
 const CONNECTIONS_PATH = 'connections';
 const WORKSHOPS_PATH = 'workshops';
 
-// Helper to get database reference
 function getDbRef(path: string): DatabaseReference {
-  const db = getFirebaseDatabase();
+  const db = getDb();
   return ref(db, path);
 }
-
-// ==================== NOTES ====================
 
 export async function createNote(note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>): Promise<Note> {
   const id = uuidv4();
@@ -80,32 +77,29 @@ export function subscribeToNotes(callback: (notes: Note[]) => void): () => void 
   
   onValue(notesRef, handleValue);
   
-  // Return unsubscribe function
   return () => off(notesRef, 'value', handleValue);
 }
 
 export async function voteForNote(id: string, increment: number = 1): Promise<void> {
   const note = await getNote(id);
   if (note) {
-    await updateNote(id, { votes: Math.max(0, note.votes + increment) });
+    await updateNote(id, { votes: Math.max(0, (note.votes || 0) + increment) });
   }
 }
 
 export async function addTagToNote(id: string, tag: string): Promise<void> {
   const note = await getNote(id);
-  if (note && !note.tags.includes(tag)) {
-    await updateNote(id, { tags: [...note.tags, tag] });
+  if (note && !(note.tags || []).includes(tag)) {
+    await updateNote(id, { tags: [...(note.tags || []), tag] });
   }
 }
 
 export async function removeTagFromNote(id: string, tag: string): Promise<void> {
   const note = await getNote(id);
   if (note) {
-    await updateNote(id, { tags: note.tags.filter((t) => t !== tag) });
+    await updateNote(id, { tags: (note.tags || []).filter((t) => t !== tag) });
   }
 }
-
-// ==================== CONNECTIONS ====================
 
 export async function createConnection(
   sourceId: string,
@@ -122,55 +116,11 @@ export async function createConnection(
   };
   
   await set(getDbRef(`${CONNECTIONS_PATH}/${id}`), connection);
-  
-  // Update both notes to include the connection
-  const [sourceNote, targetNote] = await Promise.all([
-    getNote(sourceId),
-    getNote(targetId),
-  ]);
-  
-  if (sourceNote && !sourceNote.connections.includes(targetId)) {
-    await updateNote(sourceId, {
-      connections: [...sourceNote.connections, targetId],
-    });
-  }
-  
-  if (targetNote && !targetNote.connections.includes(sourceId)) {
-    await updateNote(targetId, {
-      connections: [...targetNote.connections, sourceId],
-    });
-  }
-  
   return connection;
 }
 
 export async function deleteConnection(id: string): Promise<void> {
-  const connectionRef = getDbRef(`${CONNECTIONS_PATH}/${id}`);
-  const snapshot = await get(connectionRef);
-  
-  if (snapshot.exists()) {
-    const connection = snapshot.val() as Connection;
-    
-    // Remove connection references from notes
-    const [sourceNote, targetNote] = await Promise.all([
-      getNote(connection.sourceId),
-      getNote(connection.targetId),
-    ]);
-    
-    if (sourceNote) {
-      await updateNote(connection.sourceId, {
-        connections: sourceNote.connections.filter((c) => c !== connection.targetId),
-      });
-    }
-    
-    if (targetNote) {
-      await updateNote(connection.targetId, {
-        connections: targetNote.connections.filter((c) => c !== connection.sourceId),
-      });
-    }
-    
-    await remove(connectionRef);
-  }
+  await remove(getDbRef(`${CONNECTIONS_PATH}/${id}`));
 }
 
 export async function getAllConnections(): Promise<Connection[]> {
@@ -199,8 +149,6 @@ export function subscribeToConnections(callback: (connections: Connection[]) => 
   return () => off(connectionsRef, 'value', handleValue);
 }
 
-// ==================== WORKSHOPS ====================
-
 export async function createWorkshop(
   workshop: Omit<Workshop, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<Workshop> {
@@ -222,8 +170,6 @@ export async function getWorkshop(id: string): Promise<Workshop | null> {
   return snapshot.exists() ? (snapshot.val() as Workshop) : null;
 }
 
-// ==================== SEED DATA ====================
-
 export async function seedDatabase(notes: Note[]): Promise<void> {
   const existingNotes = await getAllNotes();
   
@@ -232,12 +178,12 @@ export async function seedDatabase(notes: Note[]): Promise<void> {
     return;
   }
   
+  const db = getDb();
   const updates: Record<string, Note> = {};
   notes.forEach((note) => {
     updates[`${NOTES_PATH}/${note.id}`] = note;
   });
   
-  const db = getFirebaseDatabase();
   await update(ref(db), updates);
   console.log(`Seeded ${notes.length} notes`);
 }

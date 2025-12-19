@@ -1,18 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Note, Category, Timeframe, ViewMode, FilterState } from '@/types';
-import { categoryConfig, timeframeConfig } from '@/data/seed';
+import { Note, Category, Timeframe, ViewMode, FilterState, Board } from '@/types';
 import { useNotes, useConnections, useFilteredNotes, useStats } from '@/lib/hooks';
 import { useUser } from '@/lib/userContext';
 import { NoteCard } from './NoteCard';
 import { NoteModal } from './NoteModal';
+import { QuickAddNote } from './QuickAddNote';
 import { exportToJSON, exportToCSV, exportToPDF } from '@/lib/export';
 import { DndContext, DragEndEvent } from '@dnd-kit/core';
 import { DraggableNoteCard } from './DraggableNoteCard';
 import { DroppableCell } from './DroppableCell';
 import { FlowView } from './FlowView';
 import styles from '@/app/Dashboard.module.css';
+
+interface DashboardProps {
+  board: Board;
+}
 
 function getRotation(id: string): number {
   const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -21,15 +25,15 @@ function getRotation(id: string): number {
 
 type SortOption = 'newest' | 'oldest' | 'mostVotes' | 'leastVotes' | 'alphabetical';
 
-export function Dashboard() {
-  const { notes, loading, addNote, editNote, removeNote, vote, seed, undo, canUndo, restoreVersion, authors } = useNotes();
-  const { connections, addConnection, removeConnection } = useConnections();
-  const { user, isNameSet } = useUser();
+export function Dashboard({ board }: DashboardProps) {
+  const { notes, loading, addNote, editNote, removeNote, vote, undo, canUndo, restoreVersion, authors } = useNotes(board.id);
+  const { connections, addConnection } = useConnections(board.id);
+  const { user } = useUser();
   
   const [viewMode, setViewMode] = useState<ViewMode>('board');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [minVotes, setMinVotes] = useState<number>(0);
-  const [collapsedRows, setCollapsedRows] = useState<Set<Category>>(new Set());
+  const [collapsedRows, setCollapsedRows] = useState<Set<string>>(new Set());
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     timeframe: 'all',
@@ -41,7 +45,6 @@ export function Dashboard() {
   
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [connectingFrom, setConnectingFrom] = useState<string | null>(null);
 
   const filteredNotes = useFilteredNotes(notes, filters);
   
@@ -60,29 +63,9 @@ export function Dashboard() {
 
   const stats = useStats(notes);
 
-  const noteCounts = {
-    all: filteredNotes.length,
-    opportunities: notes.filter(n => n.category === 'opportunities').length,
-    enablers: notes.filter(n => n.category === 'enablers').length,
-    actors: notes.filter(n => n.category === 'actors').length,
-  };
-
-  useEffect(() => {
-    if (!loading && notes.length === 0) {
-      seed();
-    }
-  }, [loading, notes.length, seed]);
-
   const handleNoteClick = (note: Note) => {
-    if (connectingFrom) {
-      if (connectingFrom !== note.id) {
-        addConnection(connectingFrom, note.id);
-      }
-      setConnectingFrom(null);
-    } else {
-      setSelectedNote(note);
-      setIsModalOpen(true);
-    }
+    setSelectedNote(note);
+    setIsModalOpen(true);
   };
 
   const handleAddNote = () => {
@@ -90,7 +73,18 @@ export function Dashboard() {
     setIsModalOpen(true);
   };
 
-  const handleSaveNote = async (data: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleQuickAdd = async (text: string, category: Category, timeframe: Timeframe) => {
+    await addNote({
+      text,
+      category,
+      timeframe,
+      votes: 0,
+      tags: [],
+      connections: [],
+    });
+  };
+
+  const handleSaveNote = async (data: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'boardId'>) => {
     if (selectedNote) {
       await editNote(selectedNote.id, data);
     } else {
@@ -111,27 +105,23 @@ export function Dashboard() {
     }
   };
 
-  const toggleRowCollapse = (category: Category) => {
+  const toggleRowCollapse = (rowId: string) => {
     setCollapsedRows(prev => {
       const next = new Set(prev);
-      if (next.has(category)) {
-        next.delete(category);
+      if (next.has(rowId)) {
+        next.delete(rowId);
       } else {
-        next.add(category);
+        next.add(rowId);
       }
       return next;
     });
   };
 
-  const getNotesByCell = (category: Category, timeframe: Timeframe) => {
+  const getNotesByCell = (rowId: string, colId: string) => {
     return processedNotes.filter(
-      (note) => note.category === category && note.timeframe === timeframe
+      (note) => note.category === rowId && note.timeframe === colId
     );
   };
-
-  if (!isNameSet) {
-    return null; // NamePrompt will show
-  }
 
   if (loading) {
     return <div className={styles.loading}>Loading...</div>;
@@ -149,17 +139,22 @@ export function Dashboard() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>AI Landscape</h1>
-        <p className={styles.subtitle}>
-          Mapping the future of artificial intelligence across opportunities,
-          enabling technologies, and key actors
-        </p>
+        <h1 className={styles.title}>{board.name}</h1>
+        {board.description && (
+          <p className={styles.subtitle}>{board.description}</p>
+        )}
         {user && (
           <div className={styles.userBadge} style={{ backgroundColor: user.colour }}>
             {user.name}
           </div>
         )}
       </header>
+
+      <QuickAddNote
+        onAdd={handleQuickAdd}
+        categories={board.rows.map(r => ({ id: r.id, label: r.label }))}
+        timeframes={board.columns.map(c => ({ id: c.id, label: c.label }))}
+      />
 
       <div className={styles.stats}>
         <div className={styles.stat}>
@@ -176,39 +171,39 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className={styles.topVoted}>
-        <div className={styles.topVotedHeader}>
-          <span className={styles.trophyIcon}>🏆</span>
-          <h2>Top Voted Ideas</h2>
-        </div>
-        <div className={styles.topVotedList}>
-          {stats.topVoted.map((note, index) => {
-            const category = note.category || 'opportunities';
-            const colour = categoryConfig[category]?.colour || 'pink';
-            return (
-              <div
-                key={note.id}
-                className={`${styles.topVotedItem} ${styles[colour]}`}
-              >
-                <div className={styles.topVotedRank}>#{index + 1}</div>
-                <div className={styles.topVotedContent}>
-                  <p className={styles.topVotedText}>{note.text}</p>
-                  <div className={styles.topVotedMeta}>
-                    <span className={styles.topVotedCategory}>{category}</span>
-                    <span className={styles.topVotedTime}>
-                      {timeframeConfig[note.timeframe]?.label || note.timeframe}
-                    </span>
+      {stats.topVoted.length > 0 && (
+        <div className={styles.topVoted}>
+          <div className={styles.topVotedHeader}>
+            <span className={styles.trophyIcon}>🏆</span>
+            <h2>Top Voted Ideas</h2>
+          </div>
+          <div className={styles.topVotedList}>
+            {stats.topVoted.map((note, index) => {
+              const row = board.rows.find(r => r.id === note.category);
+              const col = board.columns.find(c => c.id === note.timeframe);
+              return (
+                <div
+                  key={note.id}
+                  className={`${styles.topVotedItem} ${styles[row?.colour || 'pink']}`}
+                >
+                  <div className={styles.topVotedRank}>#{index + 1}</div>
+                  <div className={styles.topVotedContent}>
+                    <p className={styles.topVotedText}>{note.text}</p>
+                    <div className={styles.topVotedMeta}>
+                      <span className={styles.topVotedCategory}>{row?.label || note.category}</span>
+                      <span className={styles.topVotedTime}>{col?.label || note.timeframe}</span>
+                    </div>
+                  </div>
+                  <div className={styles.topVotedDots}>
+                    <span className={styles.dotCount}>{note.votes || 0}</span>
+                    <span className={styles.dotLabel}>votes</span>
                   </div>
                 </div>
-                <div className={styles.topVotedDots}>
-                  <span className={styles.dotCount}>{note.votes || 0}</span>
-                  <span className={styles.dotLabel}>votes</span>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className={styles.controls}>
         <div className={styles.viewToggle}>
@@ -264,56 +259,20 @@ export function Dashboard() {
           <option value={5}>5+ Votes</option>
         </select>
 
-        <select
-          className={styles.sortSelect}
-          value={filters.authorId || ''}
-          onChange={(e) => setFilters((f) => ({ ...f, authorId: e.target.value || undefined }))}
-        >
-          <option value="">All Authors</option>
-          {authors.map((author) => (
-            <option key={author.id} value={author.id}>
-              {author.name}
-            </option>
-          ))}
-        </select>
-
-        <div className={styles.filterGroup}>
-          <button
-            className={`${styles.filterBtn} ${filters.timeframe === 'all' ? styles.active : ''}`}
-            onClick={() => setFilters((f) => ({ ...f, timeframe: 'all' }))}
+        {authors.length > 0 && (
+          <select
+            className={styles.sortSelect}
+            value={filters.authorId || ''}
+            onChange={(e) => setFilters((f) => ({ ...f, authorId: e.target.value || undefined }))}
           >
-            All Times
-          </button>
-          {Object.entries(timeframeConfig)
-            .filter(([key]) => key !== 'foundational')
-            .map(([key, config]) => (
-              <button
-                key={key}
-                className={`${styles.filterBtn} ${filters.timeframe === key ? styles.active : ''}`}
-                onClick={() => setFilters((f) => ({ ...f, timeframe: key as Timeframe }))}
-              >
-                {config.label}
-              </button>
+            <option value="">All Authors</option>
+            {authors.map((author) => (
+              <option key={author.id} value={author.id}>
+                {author.name}
+              </option>
             ))}
-        </div>
-
-        <div className={styles.filterGroup}>
-          <button
-            className={`${styles.filterBtn} ${filters.category === 'all' ? styles.active : ''}`}
-            onClick={() => setFilters((f) => ({ ...f, category: 'all' }))}
-          >
-            All ({noteCounts.all})
-          </button>
-          {Object.entries(categoryConfig).map(([key, config]) => (
-            <button
-              key={key}
-              className={`${styles.filterBtn} ${filters.category === key ? styles.active : ''}`}
-              onClick={() => setFilters((f) => ({ ...f, category: key as Category }))}
-            >
-              {config.label} ({noteCounts[key as Category]})
-            </button>
-          ))}
-        </div>
+          </select>
+        )}
 
         <button 
           className={styles.undoBtn} 
@@ -343,29 +302,36 @@ export function Dashboard() {
       {viewMode === 'board' && (
         <DndContext onDragEnd={handleDragEnd}>
           <div className={`${styles.board} ${styles.fadeIn}`}>
-            <div className={styles.boardHeader}>
+            <div className={styles.boardHeader} style={{ gridTemplateColumns: `180px repeat(${board.columns.length}, 1fr)` }}>
               <div className={styles.boardRowLabel}></div>
-              <div className={styles.timeframeHeader}>Next 10 months</div>
-              <div className={styles.timeframeHeader}>3 years</div>
-              <div className={styles.timeframeHeader}>10 years</div>
+              {board.columns.map((col) => (
+                <div key={col.id} className={styles.timeframeHeader}>{col.label}</div>
+              ))}
             </div>
 
-            {(['opportunities', 'enablers', 'actors'] as Category[]).map((category) => (
-              <div key={category} className={`${styles.boardRow} ${styles[category + 'Row']}`}>
+            {board.rows.map((row) => (
+              <div 
+                key={row.id} 
+                className={`${styles.boardRow}`}
+                style={{ 
+                  gridTemplateColumns: `180px repeat(${board.columns.length}, 1fr)`,
+                  background: `rgba(${row.colour === 'pink' ? '254,215,215' : row.colour === 'blue' ? '190,227,248' : '250,240,137'}, 0.1)`
+                }}
+              >
                 <div className={styles.boardRowLabel}>
                   <button 
                     className={styles.collapseBtn}
-                    onClick={() => toggleRowCollapse(category)}
+                    onClick={() => toggleRowCollapse(row.id)}
                   >
-                    {collapsedRows.has(category) ? '▶' : '▼'}
+                    {collapsedRows.has(row.id) ? '▶' : '▼'}
                   </button>
-                  <div className={`${styles.categoryBadge} ${styles[categoryConfig[category].colour]}`}>
-                    {categoryConfig[category].label}
+                  <div className={`${styles.categoryBadge} ${styles[row.colour]}`}>
+                    {row.label}
                   </div>
                 </div>
-                {!collapsedRows.has(category) && (['10months', '3years', '10years'] as Timeframe[]).map((tf) => (
-                  <DroppableCell key={tf} category={category} timeframe={tf}>
-                    {getNotesByCell(category, tf).map((note) => (
+                {!collapsedRows.has(row.id) && board.columns.map((col) => (
+                  <DroppableCell key={col.id} category={row.id as Category} timeframe={col.id as Timeframe}>
+                    {getNotesByCell(row.id, col.id).map((note) => (
                       <DraggableNoteCard
                         key={note.id}
                         note={note}
@@ -376,9 +342,9 @@ export function Dashboard() {
                     ))}
                   </DroppableCell>
                 ))}
-                {collapsedRows.has(category) && (
-                  <div className={styles.collapsedRow}>
-                    {processedNotes.filter(n => n.category === category).length} notes hidden
+                {collapsedRows.has(row.id) && (
+                  <div className={styles.collapsedRow} style={{ gridColumn: `span ${board.columns.length}` }}>
+                    {processedNotes.filter(n => n.category === row.id).length} notes hidden
                   </div>
                 )}
               </div>
@@ -428,6 +394,8 @@ export function Dashboard() {
         onDelete={removeNote}
         onVote={vote}
         onRestoreVersion={restoreVersion}
+        categories={board.rows.map(r => ({ id: r.id, label: r.label }))}
+        timeframes={board.columns.map(c => ({ id: c.id, label: c.label }))}
       />
     </div>
   );

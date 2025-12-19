@@ -84,11 +84,13 @@ export async function voteForNote(id: string, increment: number = 1): Promise<vo
 export async function createConnection(
   sourceId: string,
   targetId: string,
-  label?: string
+  label?: string,
+  boardId?: string
 ): Promise<Connection> {
   const id = uuidv4();
   const connection: Connection = {
     id,
+    boardId: boardId || '',
     sourceId,
     targetId,
     createdAt: Date.now(),
@@ -127,6 +129,29 @@ export function subscribeToConnections(callback: (connections: Connection[]) => 
   return () => off(connectionsRef, 'value', handleValue);
 }
 
+export async function addComment(noteId: string, text: string, author: string, authorId: string): Promise<void> {
+  const note = await getNote(noteId);
+  if (note) {
+    const comment: Comment = {
+      id: uuidv4(),
+      text,
+      author,
+      authorId,
+      createdAt: Date.now(),
+    };
+    const comments = [...(note.comments || []), comment];
+    await updateNote(noteId, { comments });
+  }
+}
+
+export async function deleteComment(noteId: string, commentId: string): Promise<void> {
+  const note = await getNote(noteId);
+  if (note && note.comments) {
+    const comments = note.comments.filter(c => c.id !== commentId);
+    await updateNote(noteId, { comments });
+  }
+}
+
 export async function seedDatabase(notes: Note[]): Promise<void> {
   const existingNotes = await getAllNotes();
   
@@ -144,27 +169,3 @@ export async function seedDatabase(notes: Note[]): Promise<void> {
   await update(ref(db), updates);
   console.log('Seeded ' + notes.length + ' notes');
 }
-
-export async function addComment(noteId: string, text: string, author: string, authorId: string): Promise<void> {
-  const note = await getNote(noteId);
-  if (note) {
-    const comment: Comment = {
-      id: uuidv4(),
-      text,
-      author,
-      createdAt: Date.now(),
-    };
-    const comments = [...(note.comments || []), comment];
-    await updateNote(noteId, { comments });
-  }
-}
-
-export async function deleteComment(noteId: string, commentId: string): Promise<void> {
-  const note = await getNote(noteId);
-  if (note && note.comments) {
-    const comments = note.comments.filter(c => c.id !== commentId);
-    await updateNote(noteId, { comments });
-  }
-}
-
-import { Comment } from '@/types';

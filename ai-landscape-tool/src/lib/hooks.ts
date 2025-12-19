@@ -16,7 +16,7 @@ import {
 import { seedNotes } from '@/data/seed';
 import { useUser } from './userContext';
 
-export function useNotes() {
+export function useNotes(boardId: string) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -27,18 +27,21 @@ export function useNotes() {
     setLoading(true);
     
     const unsubscribe = subscribeToNotes((fetchedNotes) => {
-      setNotes(fetchedNotes);
+      // Filter notes by boardId
+      const boardNotes = fetchedNotes.filter(n => n.boardId === boardId);
+      setNotes(boardNotes);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [boardId]);
 
   const addNote = useCallback(
-    async (noteData: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => {
+    async (noteData: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'boardId'>) => {
       try {
         const noteWithAuthor = {
           ...noteData,
+          boardId,
           createdBy: user?.name || 'Anonymous',
           createdById: user?.id || 'unknown',
           lastEditedBy: user?.name || 'Anonymous',
@@ -52,14 +55,13 @@ export function useNotes() {
         throw err;
       }
     },
-    [user]
+    [user, boardId]
   );
 
   const editNote = useCallback(async (id: string, updates: Partial<Note>) => {
     try {
       const note = notes.find(n => n.id === id);
       if (note) {
-        // Save current version to history
         const version: NoteVersion = {
           id: Date.now().toString(),
           text: note.text,
@@ -70,7 +72,7 @@ export function useNotes() {
           timestamp: note.updatedAt,
         };
         
-        const history = [...(note.history || []), version].slice(-20); // Keep last 20 versions
+        const history = [...(note.history || []), version].slice(-20);
         
         await dbUpdateNote(id, {
           ...updates,
@@ -109,12 +111,13 @@ export function useNotes() {
 
   const seed = useCallback(async () => {
     try {
-      await seedDatabase(seedNotes);
+      const notesWithBoardId = seedNotes.map(n => ({ ...n, boardId } as Note));
+      await seedDatabase(notesWithBoardId);
     } catch (err) {
       setError(err as Error);
       throw err;
     }
-  }, []);
+  }, [boardId]);
 
   const undo = useCallback(async () => {
     if (!lastAction) return;
@@ -147,7 +150,6 @@ export function useNotes() {
     }
   }, [user]);
 
-  // Get unique authors
   const authors = Array.from(
     new Map(
       notes
@@ -172,7 +174,7 @@ export function useNotes() {
   };
 }
 
-export function useConnections() {
+export function useConnections(boardId: string) {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -181,24 +183,25 @@ export function useConnections() {
     setLoading(true);
     
     const unsubscribe = subscribeToConnections((fetchedConnections) => {
-      setConnections(fetchedConnections);
+      const boardConnections = fetchedConnections.filter(c => c.boardId === boardId);
+      setConnections(boardConnections);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [boardId]);
 
   const addConnection = useCallback(
     async (sourceId: string, targetId: string, label?: string) => {
       try {
-        const newConnection = await createConnection(sourceId, targetId, label);
+        const newConnection = await createConnection(sourceId, targetId, label, boardId);
         return newConnection;
       } catch (err) {
         setError(err as Error);
         throw err;
       }
     },
-    []
+    [boardId]
   );
 
   const removeConnection = useCallback(async (id: string) => {
@@ -252,32 +255,16 @@ export function useFilteredNotes(notes: Note[], filters: FilterState) {
 export function useStats(notes: Note[]) {
   const totalIdeas = notes.length;
   const totalVotes = notes.reduce((sum, note) => sum + (note.votes || 0), 0);
-  
   const contributors = new Set(notes.map((n) => n.createdById).filter(Boolean)).size || 1;
 
   const topVoted = [...notes]
     .sort((a, b) => (b.votes || 0) - (a.votes || 0))
     .slice(0, 5);
 
-  const byCategory = {
-    opportunities: notes.filter((n) => n.category === 'opportunities').length,
-    enablers: notes.filter((n) => n.category === 'enablers').length,
-    actors: notes.filter((n) => n.category === 'actors').length,
-  };
-
-  const byTimeframe = {
-    '10months': notes.filter((n) => n.timeframe === '10months').length,
-    '3years': notes.filter((n) => n.timeframe === '3years').length,
-    '10years': notes.filter((n) => n.timeframe === '10years').length,
-    foundational: notes.filter((n) => n.timeframe === 'foundational').length,
-  };
-
   return {
     totalIdeas,
     totalVotes,
     contributors,
     topVoted,
-    byCategory,
-    byTimeframe,
   };
 }

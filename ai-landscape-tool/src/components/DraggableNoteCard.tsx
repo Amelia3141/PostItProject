@@ -8,8 +8,7 @@ import styles from '@/app/Dashboard.module.css';
 interface DraggableNoteCardProps {
   note: Note;
   onClick?: () => void;
-  isSelected?: boolean;
-  isConnecting?: boolean;
+  onVote?: (id: string, increment: number) => void;
   rotation?: number;
 }
 
@@ -22,8 +21,7 @@ const categoryColours: Record<Category, string> = {
 export function DraggableNoteCard({
   note,
   onClick,
-  isSelected = false,
-  isConnecting = false,
+  onVote,
   rotation = 0,
 }: DraggableNoteCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -41,22 +39,40 @@ export function DraggableNoteCard({
     cursor: 'grab',
   };
 
+  const handleVote = (e: React.MouseEvent, increment: number) => {
+    e.stopPropagation();
+    if (onVote) {
+      onVote(note.id, increment);
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      data-note-id={note.id}
-      className={`${styles.card} ${styles[colourClass]} ${isSelected ? styles.selected : ''} ${isConnecting ? styles.connecting : ''}`}
+      className={`${styles.card} ${styles[colourClass]}`}
       style={style}
       onClick={onClick}
     >
       <p className={styles.cardText}>{note.text}</p>
       <div className={styles.cardFooter}>
-        <div className={styles.dots}>
-          {Array.from({ length: Math.min(votes, 10) }).map((_, i) => (
-            <span key={i} className={styles.dot} />
-          ))}
+        <div className={styles.voteButtons}>
+          <button 
+            className={styles.voteSmallBtn} 
+            onClick={(e) => handleVote(e, -1)}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            −
+          </button>
+          <span className={styles.voteCount}>{votes}</span>
+          <button 
+            className={styles.voteSmallBtn} 
+            onClick={(e) => handleVote(e, 1)}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            +
+          </button>
         </div>
         {tags.length > 0 && (
           <div className={styles.tags}>
@@ -68,6 +84,11 @@ export function DraggableNoteCard({
           </div>
         )}
       </div>
+      {note.createdBy && (
+        <div className={styles.authorBadge} style={{ marginTop: '4px' }}>
+          {note.createdBy}
+        </div>
+      )}
     </div>
   );
 }

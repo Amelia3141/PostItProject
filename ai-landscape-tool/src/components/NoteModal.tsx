@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Note, Category, Timeframe, Comment, NoteVersion } from '@/types';
-import { categoryConfig, timeframeConfig } from '@/data/seed';
 import { addComment, deleteComment } from '@/lib/db';
 import { useUser } from '@/lib/userContext';
 import styles from '@/app/Dashboard.module.css';
@@ -11,17 +10,29 @@ interface NoteModalProps {
   note: Note | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  onSave: (data: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'boardId'>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onVote: (id: string, increment: number) => Promise<void>;
   onRestoreVersion: (noteId: string, version: NoteVersion) => Promise<void>;
+  categories: { id: string; label: string }[];
+  timeframes: { id: string; label: string }[];
 }
 
-export function NoteModal({ note, isOpen, onClose, onSave, onDelete, onVote, onRestoreVersion }: NoteModalProps) {
+export function NoteModal({ 
+  note, 
+  isOpen, 
+  onClose, 
+  onSave, 
+  onDelete, 
+  onVote, 
+  onRestoreVersion,
+  categories,
+  timeframes,
+}: NoteModalProps) {
   const { user } = useUser();
   const [text, setText] = useState('');
-  const [category, setCategory] = useState<Category>('opportunities');
-  const [timeframe, setTimeframe] = useState<Timeframe>('10months');
+  const [category, setCategory] = useState<string>(categories[0]?.id || '');
+  const [timeframe, setTimeframe] = useState<string>(timeframes[0]?.id || '');
   const [tagsInput, setTagsInput] = useState('');
   const [votes, setVotes] = useState(0);
   const [newComment, setNewComment] = useState('');
@@ -38,14 +49,14 @@ export function NoteModal({ note, isOpen, onClose, onSave, onDelete, onVote, onR
       setComments(note.comments || []);
     } else {
       setText('');
-      setCategory('opportunities');
-      setTimeframe('10months');
+      setCategory(categories[0]?.id || '');
+      setTimeframe(timeframes[0]?.id || '');
       setTagsInput('');
       setVotes(0);
       setComments([]);
     }
     setShowHistory(false);
-  }, [note]);
+  }, [note, categories, timeframes]);
 
   if (!isOpen) return null;
 
@@ -57,8 +68,8 @@ export function NoteModal({ note, isOpen, onClose, onSave, onDelete, onVote, onR
 
     await onSave({
       text,
-      category,
-      timeframe,
+      category: category as Category,
+      timeframe: timeframe as Timeframe,
       votes,
       tags,
       connections: note?.connections || [],
@@ -138,10 +149,10 @@ export function NoteModal({ note, isOpen, onClose, onSave, onDelete, onVote, onR
 
         <div className={styles.formGroup}>
           <label>Category</label>
-          <select value={category} onChange={(e) => setCategory(e.target.value as Category)}>
-            {Object.entries(categoryConfig).map(([key, config]) => (
-              <option key={key} value={key}>
-                {config.label}
+          <select value={category} onChange={(e) => setCategory(e.target.value)}>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.label}
               </option>
             ))}
           </select>
@@ -149,10 +160,10 @@ export function NoteModal({ note, isOpen, onClose, onSave, onDelete, onVote, onR
 
         <div className={styles.formGroup}>
           <label>Timeframe</label>
-          <select value={timeframe} onChange={(e) => setTimeframe(e.target.value as Timeframe)}>
-            {Object.entries(timeframeConfig).map(([key, config]) => (
-              <option key={key} value={key}>
-                {config.label}
+          <select value={timeframe} onChange={(e) => setTimeframe(e.target.value)}>
+            {timeframes.map((tf) => (
+              <option key={tf.id} value={tf.id}>
+                {tf.label}
               </option>
             ))}
           </select>
@@ -195,7 +206,7 @@ export function NoteModal({ note, isOpen, onClose, onSave, onDelete, onVote, onR
                   <div key={version.id} className={styles.historyItem}>
                     <div>
                       <div className={styles.historyText}>
-                        {version.text.substring(0, 50)}...
+                        {version.text.length > 50 ? version.text.substring(0, 50) + '...' : version.text}
                       </div>
                       <div className={styles.historyMeta}>
                         {version.editedBy} • {formatDate(version.timestamp)}

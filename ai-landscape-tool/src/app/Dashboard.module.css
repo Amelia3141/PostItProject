@@ -983,3 +983,288 @@
   color: #1a1a2e;
   margin-bottom: 0.125rem;
 }
+
+/* Board Selector */
+.boardSelector {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border: 1px solid #e9ecef;
+}
+
+.boardSelectorHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.boardSelectorHeader h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #1a1a2e;
+}
+
+.newBoardBtn {
+  padding: 0.5rem 1rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.newBoardBtn:hover {
+  background: #5a6fd6;
+}
+
+.boardList {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.noBoards {
+  color: #6c757d;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.boardItem {
+  flex: 0 0 auto;
+  min-width: 200px;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.boardItem:hover {
+  border-color: #667eea;
+}
+
+.activeBoardItem {
+  border-color: #667eea;
+  background: #f0f4ff;
+}
+
+.boardItemMain {
+  flex: 1;
+}
+
+.boardItemName {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #1a1a2e;
+  margin-bottom: 0.25rem;
+}
+
+.boardItemMeta {
+  font-size: 0.7rem;
+  color: #6c757d;
+}
+
+.boardItemActions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.boardActionBtn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: rgba(0,0,0,0.05);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.boardActionBtn:hover {
+  background: rgba(0,0,0,0.1);
+}
+
+/* New Board Modal */
+.newBoardModal {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.newBoardModal h2 {
+  margin: 0 0 1.5rem 0;
+  color: #1a1a2e;
+}
+
+.createOptions {
+  display: flex;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.createOptionBtn {
+  flex: 1;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.createOptionBtn:hover {
+  border-color: #667eea;
+  background: #f0f4ff;
+}
+
+.templateGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.templateCard {
+  padding: 1rem;
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.templateCard:hover {
+  border-color: #667eea;
+  background: #f0f4ff;
+}
+
+.templateName {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1a1a2e;
+  margin-bottom: 0.25rem;
+}
+
+.templateDesc {
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+}
+
+.templatePreview {
+  font-size: 0.7rem;
+  color: #667eea;
+  font-weight: 500;
+}
+
+/* Quick Add Note */
+.quickAdd {
+  margin-bottom: 1rem;
+}
+
+.quickAddTrigger {
+  width: 100%;
+  padding: 1rem;
+  background: #f8f9fa;
+  border: 2px dashed #e9ecef;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #6c757d;
+  transition: all 0.2s;
+}
+
+.quickAddTrigger:hover {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.quickAddForm {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.quickAddInput {
+  width: 100%;
+  min-height: 80px;
+  padding: 0.75rem;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  resize: vertical;
+  margin-bottom: 0.75rem;
+}
+
+.quickAddInput:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.quickAddControls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.quickAddSelect {
+  padding: 0.5rem;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  background: white;
+}
+
+.quickAddSubmit {
+  padding: 0.5rem 1rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.quickAddSubmit:hover {
+  background: #5a6fd6;
+}
+
+.quickAddSubmit:disabled {
+  background: #c4c4c4;
+  cursor: not-allowed;
+}
+
+.quickAddCancel {
+  padding: 0.5rem 1rem;
+  background: none;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.quickAddCancel:hover {
+  border-color: #667eea;
+}

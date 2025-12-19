@@ -31,6 +31,7 @@ export interface NoteVersion {
 
 export interface Note {
   id: string;
+  boardId: string;
   text: string;
   category: Category;
   timeframe: Timeframe;
@@ -49,10 +50,43 @@ export interface Note {
 
 export interface Connection {
   id: string;
+  boardId: string;
   sourceId: string;
   targetId: string;
   label?: string;
   createdAt: number;
+}
+
+export interface BoardColumn {
+  id: string;
+  label: string;
+}
+
+export interface BoardRow {
+  id: string;
+  label: string;
+  colour: string;
+  question?: string;
+}
+
+export interface Board {
+  id: string;
+  name: string;
+  description?: string;
+  columns: BoardColumn[];
+  rows: BoardRow[];
+  createdAt: number;
+  updatedAt: number;
+  createdBy?: string;
+  createdById?: string;
+}
+
+export interface BoardTemplate {
+  id: string;
+  name: string;
+  description: string;
+  columns: BoardColumn[];
+  rows: BoardRow[];
 }
 
 export interface Workshop {

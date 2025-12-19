@@ -10,7 +10,7 @@ import {
   DatabaseReference,
 } from 'firebase/database';
 import { getDb } from './firebase';
-import { Note, Connection, Workshop } from '@/types';
+import { Note, Connection, Workshop, Comment } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
 const NOTES_PATH = 'notes';
@@ -144,3 +144,27 @@ export async function seedDatabase(notes: Note[]): Promise<void> {
   await update(ref(db), updates);
   console.log('Seeded ' + notes.length + ' notes');
 }
+
+export async function addComment(noteId: string, text: string, author: string, authorId: string): Promise<void> {
+  const note = await getNote(noteId);
+  if (note) {
+    const comment: Comment = {
+      id: uuidv4(),
+      text,
+      author,
+      createdAt: Date.now(),
+    };
+    const comments = [...(note.comments || []), comment];
+    await updateNote(noteId, { comments });
+  }
+}
+
+export async function deleteComment(noteId: string, commentId: string): Promise<void> {
+  const note = await getNote(noteId);
+  if (note && note.comments) {
+    const comments = note.comments.filter(c => c.id !== commentId);
+    await updateNote(noteId, { comments });
+  }
+}
+
+import { Comment } from '@/types';

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Note, Category, Timeframe, ViewMode, FilterState } from '@/types';
 import { categoryConfig, timeframeConfig } from '@/data/seed';
 import { useNotes, useConnections, useFilteredNotes, useStats } from '@/lib/hooks';
+import { useUser } from '@/lib/userContext';
 import { NoteCard } from './NoteCard';
 import { NoteModal } from './NoteModal';
 import { exportToJSON, exportToCSV, exportToPDF } from '@/lib/export';
@@ -18,16 +19,24 @@ function getRotation(id: string): number {
   return ((hash % 13) - 6) * 0.1;
 }
 
+type SortOption = 'newest' | 'oldest' | 'mostVotes' | 'leastVotes' | 'alphabetical';
+
 export function Dashboard() {
-  const { notes, loading, addNote, editNote, removeNote, vote, seed } = useNotes();
+  const { notes, loading, addNote, editNote, removeNote, vote, seed, undo, canUndo, restoreVersion, authors } = useNotes();
   const { connections, addConnection, removeConnection } = useConnections();
+  const { user, isNameSet } = useUser();
   
   const [viewMode, setViewMode] = useState<ViewMode>('board');
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [minVotes, setMinVotes] = useState<number>(0);
+  const [collapsedRows, setCollapsedRows] = useState<Set<Category>>(new Set());
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     timeframe: 'all',
     category: 'all',
     searchQuery: '',
     showConnections: false,
+    authorId: undefined,
   });
   
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -35,7 +44,28 @@ export function Dashboard() {
   const [connectingFrom, setConnectingFrom] = useState<string | null>(null);
 
   const filteredNotes = useFilteredNotes(notes, filters);
+  
+  const processedNotes = filteredNotes
+    .filter(note => (note.votes || 0) >= minVotes)
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'newest': return b.createdAt - a.createdAt;
+        case 'oldest': return a.createdAt - b.createdAt;
+        case 'mostVotes': return (b.votes || 0) - (a.votes || 0);
+        case 'leastVotes': return (a.votes || 0) - (b.votes || 0);
+        case 'alphabetical': return a.text.localeCompare(b.text);
+        default: return 0;
+      }
+    });
+
   const stats = useStats(notes);
+
+  const noteCounts = {
+    all: filteredNotes.length,
+    opportunities: notes.filter(n => n.category === 'opportunities').length,
+    enablers: notes.filter(n => n.category === 'enablers').length,
+    actors: notes.filter(n => n.category === 'actors').length,
+  };
 
   useEffect(() => {
     if (!loading && notes.length === 0) {
@@ -81,19 +111,40 @@ export function Dashboard() {
     }
   };
 
+  const toggleRowCollapse = (category: Category) => {
+    setCollapsedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(category)) {
+        next.delete(category);
+      } else {
+        next.add(category);
+      }
+      return next;
+    });
+  };
+
   const getNotesByCell = (category: Category, timeframe: Timeframe) => {
-    return filteredNotes.filter(
+    return processedNotes.filter(
       (note) => note.category === category && note.timeframe === timeframe
     );
   };
 
-  const getFoundationalNotes = () => {
-    return filteredNotes.filter((note) => note.timeframe === 'foundational');
-  };
+  if (!isNameSet) {
+    return null; // NamePrompt will show
+  }
 
   if (loading) {
     return <div className={styles.loading}>Loading...</div>;
   }
+
+  const flowViewContent = (
+    <FlowView
+      notes={processedNotes}
+      connections={connections}
+      onNoteClick={handleNoteClick}
+      onConnect={addConnection}
+    />
+  );
 
   return (
     <div className={styles.container}>
@@ -103,6 +154,11 @@ export function Dashboard() {
           Mapping the future of artificial intelligence across opportunities,
           enabling technologies, and key actors
         </p>
+        {user && (
+          <div className={styles.userBadge} style={{ backgroundColor: user.colour }}>
+            {user.name}
+          </div>
+        )}
       </header>
 
       <div className={styles.stats}>
@@ -184,6 +240,43 @@ export function Dashboard() {
           onChange={(e) => setFilters((f) => ({ ...f, searchQuery: e.target.value }))}
         />
 
+        <select 
+          className={styles.sortSelect}
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as SortOption)}
+        >
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="mostVotes">Most Votes</option>
+          <option value="leastVotes">Least Votes</option>
+          <option value="alphabetical">A-Z</option>
+        </select>
+
+        <select
+          className={styles.sortSelect}
+          value={minVotes}
+          onChange={(e) => setMinVotes(Number(e.target.value))}
+        >
+          <option value={0}>All Votes</option>
+          <option value={1}>1+ Votes</option>
+          <option value={2}>2+ Votes</option>
+          <option value={3}>3+ Votes</option>
+          <option value={5}>5+ Votes</option>
+        </select>
+
+        <select
+          className={styles.sortSelect}
+          value={filters.authorId || ''}
+          onChange={(e) => setFilters((f) => ({ ...f, authorId: e.target.value || undefined }))}
+        >
+          <option value="">All Authors</option>
+          {authors.map((author) => (
+            <option key={author.id} value={author.id}>
+              {author.name}
+            </option>
+          ))}
+        </select>
+
         <div className={styles.filterGroup}>
           <button
             className={`${styles.filterBtn} ${filters.timeframe === 'all' ? styles.active : ''}`}
@@ -209,7 +302,7 @@ export function Dashboard() {
             className={`${styles.filterBtn} ${filters.category === 'all' ? styles.active : ''}`}
             onClick={() => setFilters((f) => ({ ...f, category: 'all' }))}
           >
-            All Categories
+            All ({noteCounts.all})
           </button>
           {Object.entries(categoryConfig).map(([key, config]) => (
             <button
@@ -217,10 +310,18 @@ export function Dashboard() {
               className={`${styles.filterBtn} ${filters.category === key ? styles.active : ''}`}
               onClick={() => setFilters((f) => ({ ...f, category: key as Category }))}
             >
-              {config.label}
+              {config.label} ({noteCounts[key as Category]})
             </button>
           ))}
         </div>
+
+        <button 
+          className={styles.undoBtn} 
+          onClick={undo}
+          disabled={!canUndo}
+        >
+          ↩ Undo
+        </button>
 
         <button className={styles.addNoteBtn} onClick={handleAddNote}>
           + Add Note
@@ -228,6 +329,15 @@ export function Dashboard() {
         <button className={styles.filterBtn} onClick={() => exportToJSON(notes)}>JSON</button>
         <button className={styles.filterBtn} onClick={() => exportToCSV(notes)}>CSV</button>
         <button className={styles.filterBtn} onClick={() => exportToPDF(notes)}>PDF</button>
+        
+        {viewMode === 'flow' && (
+          <button 
+            className={styles.filterBtn}
+            onClick={() => setIsFullscreen(!isFullscreen)}
+          >
+            {isFullscreen ? '⊙ Exit' : '⛶ Fullscreen'}
+          </button>
+        )}
       </div>
 
       {viewMode === 'board' && (
@@ -240,70 +350,51 @@ export function Dashboard() {
               <div className={styles.timeframeHeader}>10 years</div>
             </div>
 
-            <div className={`${styles.boardRow} ${styles.pinkRow}`}>
-              <div className={styles.boardRowLabel}>
-                <div className={`${styles.categoryBadge} ${styles.pink}`}>Opportunities</div>
+            {(['opportunities', 'enablers', 'actors'] as Category[]).map((category) => (
+              <div key={category} className={`${styles.boardRow} ${styles[category + 'Row']}`}>
+                <div className={styles.boardRowLabel}>
+                  <button 
+                    className={styles.collapseBtn}
+                    onClick={() => toggleRowCollapse(category)}
+                  >
+                    {collapsedRows.has(category) ? '▶' : '▼'}
+                  </button>
+                  <div className={`${styles.categoryBadge} ${styles[categoryConfig[category].colour]}`}>
+                    {categoryConfig[category].label}
+                  </div>
+                </div>
+                {!collapsedRows.has(category) && (['10months', '3years', '10years'] as Timeframe[]).map((tf) => (
+                  <DroppableCell key={tf} category={category} timeframe={tf}>
+                    {getNotesByCell(category, tf).map((note) => (
+                      <DraggableNoteCard
+                        key={note.id}
+                        note={note}
+                        onClick={() => handleNoteClick(note)}
+                        onVote={vote}
+                        rotation={getRotation(note.id)}
+                      />
+                    ))}
+                  </DroppableCell>
+                ))}
+                {collapsedRows.has(category) && (
+                  <div className={styles.collapsedRow}>
+                    {processedNotes.filter(n => n.category === category).length} notes hidden
+                  </div>
+                )}
               </div>
-              {(['10months', '3years', '10years'] as Timeframe[]).map((tf) => (
-                <DroppableCell key={tf} category="opportunities" timeframe={tf}>
-                  {getNotesByCell('opportunities', tf).map((note) => (
-                    <DraggableNoteCard
-                      key={note.id}
-                      note={note}
-                      onClick={() => handleNoteClick(note)}
-                      rotation={getRotation(note.id)}
-                    />
-                  ))}
-                </DroppableCell>
-              ))}
-            </div>
-
-            <div className={`${styles.boardRow} ${styles.blueRow}`}>
-              <div className={styles.boardRowLabel}>
-                <div className={`${styles.categoryBadge} ${styles.blue}`}>Enablers</div>
-              </div>
-              {(['10months', '3years', '10years'] as Timeframe[]).map((tf) => (
-                <DroppableCell key={tf} category="enablers" timeframe={tf}>
-                  {getNotesByCell('enablers', tf).map((note) => (
-                    <DraggableNoteCard
-                      key={note.id}
-                      note={note}
-                      onClick={() => handleNoteClick(note)}
-                      rotation={getRotation(note.id)}
-                    />
-                  ))}
-                </DroppableCell>
-              ))}
-            </div>
-
-            <div className={`${styles.boardRow} ${styles.yellowRow}`}>
-              <div className={styles.boardRowLabel}>
-                <div className={`${styles.categoryBadge} ${styles.yellow}`}>Actors</div>
-              </div>
-              {(['10months', '3years', '10years'] as Timeframe[]).map((tf) => (
-                <DroppableCell key={tf} category="actors" timeframe={tf}>
-                  {getNotesByCell('actors', tf).map((note) => (
-                    <DraggableNoteCard
-                      key={note.id}
-                      note={note}
-                      onClick={() => handleNoteClick(note)}
-                      rotation={getRotation(note.id)}
-                    />
-                  ))}
-                </DroppableCell>
-              ))}
-            </div>
+            ))}
           </div>
         </DndContext>
       )}
 
       {viewMode === 'grid' && (
         <div className={styles.gridView}>
-          {filteredNotes.map((note) => (
+          {processedNotes.map((note) => (
             <NoteCard
               key={note.id}
               note={note}
               onClick={() => handleNoteClick(note)}
+              onVote={vote}
               rotation={getRotation(note.id)}
             />
           ))}
@@ -311,12 +402,19 @@ export function Dashboard() {
       )}
 
       {viewMode === 'flow' && (
-        <FlowView
-          notes={filteredNotes}
-          connections={connections}
-          onNoteClick={handleNoteClick}
-          onConnect={addConnection}
-        />
+        isFullscreen ? (
+          <div className={styles.fullscreenFlow}>
+            <button 
+              className={styles.exitFullscreenBtn}
+              onClick={() => setIsFullscreen(false)}
+            >
+              ✕ Exit Fullscreen
+            </button>
+            {flowViewContent}
+          </div>
+        ) : (
+          flowViewContent
+        )
       )}
 
       <NoteModal
@@ -329,6 +427,7 @@ export function Dashboard() {
         onSave={handleSaveNote}
         onDelete={removeNote}
         onVote={vote}
+        onRestoreVersion={restoreVersion}
       />
     </div>
   );

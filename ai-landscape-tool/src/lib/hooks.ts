@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Note, Connection, FilterState, Category, Timeframe } from '@/types';
+import { Note, Connection, FilterState, Category, Timeframe, NoteVersion } from '@/types';
 import {
   subscribeToNotes,
   subscribeToConnections,
-  createNote,
-  updateNote,
+  createNote as dbCreateNote,
+  updateNote as dbUpdateNote,
   deleteNote,
   voteForNote,
   createConnection,
@@ -14,11 +14,14 @@ import {
   seedDatabase,
 } from './db';
 import { seedNotes } from '@/data/seed';
+import { useUser } from './userContext';
 
 export function useNotes() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [lastAction, setLastAction] = useState<{ type: string; data: any } | null>(null);
+  const { user } = useUser();
 
   useEffect(() => {
     setLoading(true);
@@ -34,33 +37,66 @@ export function useNotes() {
   const addNote = useCallback(
     async (noteData: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => {
       try {
-        const newNote = await createNote(noteData);
+        const noteWithAuthor = {
+          ...noteData,
+          createdBy: user?.name || 'Anonymous',
+          createdById: user?.id || 'unknown',
+          lastEditedBy: user?.name || 'Anonymous',
+          lastEditedById: user?.id || 'unknown',
+        };
+        const newNote = await dbCreateNote(noteWithAuthor);
+        setLastAction({ type: 'create', data: newNote });
         return newNote;
       } catch (err) {
         setError(err as Error);
         throw err;
       }
     },
-    []
+    [user]
   );
 
   const editNote = useCallback(async (id: string, updates: Partial<Note>) => {
     try {
-      await updateNote(id, updates);
+      const note = notes.find(n => n.id === id);
+      if (note) {
+        // Save current version to history
+        const version: NoteVersion = {
+          id: Date.now().toString(),
+          text: note.text,
+          category: note.category,
+          timeframe: note.timeframe,
+          editedBy: note.lastEditedBy || note.createdBy || 'Unknown',
+          editedById: note.lastEditedById || note.createdById || 'unknown',
+          timestamp: note.updatedAt,
+        };
+        
+        const history = [...(note.history || []), version].slice(-20); // Keep last 20 versions
+        
+        await dbUpdateNote(id, {
+          ...updates,
+          lastEditedBy: user?.name || 'Anonymous',
+          lastEditedById: user?.id || 'unknown',
+          history,
+        });
+        
+        setLastAction({ type: 'edit', data: { id, previousState: note } });
+      }
     } catch (err) {
       setError(err as Error);
       throw err;
     }
-  }, []);
+  }, [notes, user]);
 
   const removeNote = useCallback(async (id: string) => {
     try {
+      const note = notes.find(n => n.id === id);
       await deleteNote(id);
+      setLastAction({ type: 'delete', data: note });
     } catch (err) {
       setError(err as Error);
       throw err;
     }
-  }, []);
+  }, [notes]);
 
   const vote = useCallback(async (id: string, increment: number = 1) => {
     try {
@@ -80,6 +116,46 @@ export function useNotes() {
     }
   }, []);
 
+  const undo = useCallback(async () => {
+    if (!lastAction) return;
+    
+    try {
+      if (lastAction.type === 'delete' && lastAction.data) {
+        await dbCreateNote(lastAction.data);
+      } else if (lastAction.type === 'edit' && lastAction.data) {
+        const { id, previousState } = lastAction.data;
+        await dbUpdateNote(id, previousState);
+      }
+      setLastAction(null);
+    } catch (err) {
+      setError(err as Error);
+    }
+  }, [lastAction]);
+
+  const restoreVersion = useCallback(async (noteId: string, version: NoteVersion) => {
+    try {
+      await dbUpdateNote(noteId, {
+        text: version.text,
+        category: version.category,
+        timeframe: version.timeframe,
+        lastEditedBy: user?.name || 'Anonymous',
+        lastEditedById: user?.id || 'unknown',
+      });
+    } catch (err) {
+      setError(err as Error);
+      throw err;
+    }
+  }, [user]);
+
+  // Get unique authors
+  const authors = Array.from(
+    new Map(
+      notes
+        .filter(n => n.createdById)
+        .map(n => [n.createdById, { id: n.createdById!, name: n.createdBy! }])
+    ).values()
+  );
+
   return {
     notes,
     loading,
@@ -89,6 +165,10 @@ export function useNotes() {
     removeNote,
     vote,
     seed,
+    undo,
+    canUndo: !!lastAction,
+    restoreVersion,
+    authors,
   };
 }
 
@@ -141,24 +221,26 @@ export function useConnections() {
 
 export function useFilteredNotes(notes: Note[], filters: FilterState) {
   return notes.filter((note) => {
-    // Filter by timeframe
     if (filters.timeframe !== 'all' && note.timeframe !== filters.timeframe) {
       return false;
     }
 
-    // Filter by category
     if (filters.category !== 'all' && note.category !== filters.category) {
       return false;
     }
 
-    // Filter by search query
+    if (filters.authorId && note.createdById !== filters.authorId) {
+      return false;
+    }
+
     if (filters.searchQuery) {
       const query = filters.searchQuery.toLowerCase();
       const matchesText = note.text.toLowerCase().includes(query);
       const matchesTags = (note.tags || []).some((tag) =>
         tag.toLowerCase().includes(query)
       );
-      if (!matchesText && !matchesTags) {
+      const matchesAuthor = (note.createdBy || '').toLowerCase().includes(query);
+      if (!matchesText && !matchesTags && !matchesAuthor) {
         return false;
       }
     }
@@ -171,8 +253,7 @@ export function useStats(notes: Note[]) {
   const totalIdeas = notes.length;
   const totalVotes = notes.reduce((sum, note) => sum + (note.votes || 0), 0);
   
-  // Count unique contributors (placeholder - would need user tracking)
-  const contributors = new Set(notes.map((n) => (n as any).createdBy).filter(Boolean)).size || 8;
+  const contributors = new Set(notes.map((n) => n.createdById).filter(Boolean)).size || 1;
 
   const topVoted = [...notes]
     .sort((a, b) => (b.votes || 0) - (a.votes || 0))

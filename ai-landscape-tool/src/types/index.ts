@@ -2,6 +2,33 @@ export type Category = 'opportunities' | 'enablers' | 'actors';
 
 export type Timeframe = '10months' | '3years' | '10years' | 'foundational';
 
+export type ViewMode = 'grid' | 'board' | 'flow';
+
+export interface User {
+  id: string;
+  name: string;
+  colour: string;
+  lastSeen: number;
+}
+
+export interface Comment {
+  id: string;
+  text: string;
+  author: string;
+  authorId: string;
+  createdAt: number;
+}
+
+export interface NoteVersion {
+  id: string;
+  text: string;
+  category: Category;
+  timeframe: Timeframe;
+  editedBy: string;
+  editedById: string;
+  timestamp: number;
+}
+
 export interface Note {
   id: string;
   text: string;
@@ -9,10 +36,15 @@ export interface Note {
   timeframe: Timeframe;
   votes: number;
   tags: string[];
-  connections: string[]; // IDs of connected notes
+  connections: string[];
+  comments?: Comment[];
   createdAt: number;
   updatedAt: number;
   createdBy?: string;
+  createdById?: string;
+  lastEditedBy?: string;
+  lastEditedById?: string;
+  history?: NoteVersion[];
 }
 
 export interface Connection {
@@ -25,28 +57,16 @@ export interface Connection {
 
 export interface Workshop {
   id: string;
-  title: string;
-  description: string;
+  name: string;
+  description?: string;
   createdAt: number;
   updatedAt: number;
-  ownerId: string;
-  collaborators: string[];
-  isPublic: boolean;
-  password?: string;
 }
-
-export interface User {
-  id: string;
-  email?: string;
-  displayName?: string;
-  createdAt: number;
-}
-
-export type ViewMode = 'grid' | 'board' | 'flow';
 
 export interface FilterState {
   timeframe: Timeframe | 'all';
   category: Category | 'all';
   searchQuery: string;
   showConnections: boolean;
+  authorId?: string;
 }

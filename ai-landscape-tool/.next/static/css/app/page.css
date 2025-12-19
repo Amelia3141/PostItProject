@@ -180,30 +180,31 @@
 .Dashboard_viewToggle__Ti917 {
   display: flex;
   gap: 0.25rem;
-  background: #f1f3f4;
-  padding: 0.25rem;
-  border-radius: 8px;
+  background: #1a1a2e;
+  padding: 0.5rem;
+  border-radius: 10px;
 }
 
 .Dashboard_viewBtn__1rrbP {
-  padding: 0.5rem 1rem;
+  padding: 0.625rem 1.25rem;
   border: none;
   background: transparent;
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.875rem;
-  color: #6c757d;
+  font-weight: 500;
+  color: rgba(255,255,255,0.6);
   transition: all 0.2s;
 }
 
 .Dashboard_viewBtn__1rrbP:hover {
-  color: #1a1a2e;
+  color: white;
 }
 
 .Dashboard_viewBtn__1rrbP.Dashboard_active__4iCeR {
-  background: white;
-  color: #1a1a2e;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  background: #667eea;
+  color: white;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
 }
 
 .Dashboard_searchInput__j3YZX {
@@ -597,6 +598,396 @@
 @keyframes Dashboard_fadeIn__z2RZ1 {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+.Dashboard_sortSelect__2oLiM {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: white;
+  cursor: pointer;
+  outline: none;
+}
+
+.Dashboard_sortSelect__2oLiM:focus {
+  border-color: #667eea;
+}
+
+.Dashboard_collapseBtn__BKJmv {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: #6c757d;
+  padding: 0.25rem;
+  margin-right: 0.5rem;
+}
+
+.Dashboard_collapseBtn__BKJmv:hover {
+  color: #1a1a2e;
+}
+
+.Dashboard_collapsedRow__oPn0t {
+  grid-column: span 3;
+  text-align: center;
+  color: #6c757d;
+  font-size: 0.875rem;
+  padding: 1rem;
+  font-style: italic;
+}
+
+.Dashboard_opportunitiesRow__jiRq9 {
+  background: rgba(254, 215, 215, 0.1);
+}
+
+.Dashboard_enablersRow__nCLnl {
+  background: rgba(190, 227, 248, 0.1);
+}
+
+.Dashboard_actorsRow__2zt4H {
+  background: rgba(250, 240, 137, 0.1);
+}
+
+.Dashboard_fullscreenFlow__y0dj0 {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: white;
+  padding: 1rem;
+}
+
+.Dashboard_exitFullscreenBtn__2b82J {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1001;
+  padding: 0.5rem 1rem;
+  background: #1a1a2e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.Dashboard_exitFullscreenBtn__2b82J:hover {
+  background: #667eea;
+}
+
+.Dashboard_commentsSection__YCCEw {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.Dashboard_commentsTitle__fLlAS {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0 0 1rem 0;
+}
+
+.Dashboard_commentsList___A5fJ {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+
+.Dashboard_noComments__s0Q20 {
+  color: #6c757d;
+  font-size: 0.875rem;
+  font-style: italic;
+  margin: 0;
+}
+
+.Dashboard_comment__O3guG {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.Dashboard_commentHeader__ai_8r {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.Dashboard_commentAuthor__KNIuJ {
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #1a1a2e;
+}
+
+.Dashboard_commentDate___IFa7 {
+  font-size: 0.7rem;
+  color: #6c757d;
+}
+
+.Dashboard_commentDelete__NaVri {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #6c757d;
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0.125rem 0.25rem;
+}
+
+.Dashboard_commentDelete__NaVri:hover {
+  color: #e53e3e;
+}
+
+.Dashboard_commentText__r4xTt {
+  font-size: 0.85rem;
+  color: #1a1a2e;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.Dashboard_addComment___2rMT {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.Dashboard_authorInput___n_Ze {
+  padding: 0.5rem;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.Dashboard_commentInput__nsz_P {
+  padding: 0.5rem;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  min-height: 60px;
+  resize: vertical;
+}
+
+.Dashboard_addCommentBtn__83KTU {
+  align-self: flex-end;
+  padding: 0.5rem 1rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.Dashboard_addCommentBtn__83KTU:hover {
+  background: #5a6fd6;
+}
+
+.Dashboard_addCommentBtn__83KTU:disabled {
+  background: #c4c4c4;
+  cursor: not-allowed;
+}
+
+.Dashboard_namePromptOverlay__Z9v_k {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.Dashboard_namePromptModal__ihMxt {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+}
+
+.Dashboard_namePromptModal__ihMxt h2 {
+  margin: 0 0 0.5rem 0;
+  color: #1a1a2e;
+}
+
+.Dashboard_namePromptModal__ihMxt p {
+  color: #6c757d;
+  margin: 0 0 1.5rem 0;
+}
+
+.Dashboard_colourPreview__zEEA1 {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  margin: 0 auto 1.5rem;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.Dashboard_namePromptModal__ihMxt input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  outline: none;
+}
+
+.Dashboard_namePromptModal__ihMxt input:focus {
+  border-color: #667eea;
+}
+
+.Dashboard_namePromptModal__ihMxt button {
+  width: 100%;
+  padding: 0.75rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.Dashboard_namePromptModal__ihMxt button:hover {
+  background: #5a6fd6;
+}
+
+.Dashboard_namePromptModal__ihMxt button:disabled {
+  background: #c4c4c4;
+  cursor: not-allowed;
+}
+
+.Dashboard_authorBadge__j9wsW {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: white;
+  margin-top: 4px;
+}
+
+.Dashboard_authorDot__tzYQU {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.Dashboard_authorFilter__HNBnv {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.Dashboard_authorSelect__eR_IZ {
+  padding: 0.5rem;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: white;
+}
+
+.Dashboard_historySection__av0IA {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.Dashboard_historyTitle__pDXZ_ {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.Dashboard_historyList__37CnO {
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.Dashboard_historyItem__jNjZJ {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.Dashboard_historyMeta__5OXao {
+  color: #6c757d;
+}
+
+.Dashboard_restoreBtn__Rg2kS {
+  padding: 0.25rem 0.5rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.7rem;
+}
+
+.Dashboard_restoreBtn__Rg2kS:hover {
+  background: #5a6fd6;
+}
+
+.Dashboard_undoBtn__GRT5o {
+  padding: 0.5rem 1rem;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.Dashboard_undoBtn__GRT5o:hover {
+  border-color: #667eea;
+}
+
+.Dashboard_undoBtn__GRT5o:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.Dashboard_userBadge__IEqLu {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-top: 0.5rem;
+}
+
+.Dashboard_noteMeta__UK70C {
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.Dashboard_historyText__R_u82 {
+  font-size: 0.8rem;
+  color: #1a1a2e;
+  margin-bottom: 0.125rem;
 }
 
 /*!***********************************************************************************************************************************************************************************************************************************************************************************!*\

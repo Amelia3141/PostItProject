@@ -1268,3 +1268,174 @@
 .quickAddCancel:hover {
   border-color: #667eea;
 }
+
+.shareUrlContainer {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.shareUrlInput {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: #f8f9fa;
+}
+
+.copyBtn {
+  padding: 0.75rem 1rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.copyBtn:hover {
+  background: #5a6fd6;
+}
+
+.shareNote {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin: 0.5rem 0;
+}
+
+.shareBtn {
+  padding: 0.5rem 1rem;
+  background: #38a169;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.shareBtn:hover {
+  background: #2f855a;
+}
+
+.shareUrlContainer {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.shareUrlInput {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: #f8f9fa;
+}
+
+.copyBtn {
+  padding: 0.75rem 1rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.copyBtn:hover {
+  background: #5a6fd6;
+}
+
+.shareNote {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin: 0.5rem 0;
+}
+
+.shareBtn {
+  padding: 0.5rem 1rem;
+  background: #38a169;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.shareBtn:hover {
+  background: #2f855a;
+}
+
+.presenceContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f0f7ff;
+  border-radius: 20px;
+  margin-left: auto;
+}
+
+.presenceLabel {
+  font-size: 0.75rem;
+  color: #6c757d;
+}
+
+.presenceAvatars {
+  display: flex;
+  gap: -8px;
+}
+
+.presenceAvatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 2px solid white;
+  margin-left: -8px;
+  cursor: default;
+}
+
+.presenceAvatar:first-child {
+  margin-left: 0;
+}
+
+.presenceMore {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #6c757d;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 600;
+  border: 2px solid white;
+  margin-left: -8px;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.readOnlyBanner {
+  background: #fff3cd;
+  color: #856404;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}

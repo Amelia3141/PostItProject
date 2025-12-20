@@ -5,6 +5,7 @@ import { Board, BoardTemplate } from '@/types';
 import { subscribeToBoards, createBoard, deleteBoard, duplicateBoard } from '@/lib/boardDb';
 import { boardTemplates } from '@/data/templates';
 import { useUser } from '@/lib/userContext';
+import { ShareModal } from './ShareModal';
 import styles from '@/app/Dashboard.module.css';
 
 interface BoardSelectorProps {
@@ -18,14 +19,8 @@ export function BoardSelector({ currentBoardId, onSelectBoard, onCreateBoard }: 
   const [boards, setBoards] = useState<Board[]>([]);
   const [showNewBoard, setShowNewBoard] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [newBoardName, setNewBoardName] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState<BoardTemplate | null>(null);
-  const [customColumns, setCustomColumns] = useState<string[]>(['Column 1', 'Column 2', 'Column 3']);
-  const [customRows, setCustomRows] = useState<{ label: string; colour: string }[]>([
-    { label: 'Row 1', colour: 'pink' },
-    { label: 'Row 2', colour: 'blue' },
-    { label: 'Row 3', colour: 'yellow' },
-  ]);
 
   useEffect(() => {
     const unsubscribe = subscribeToBoards(setBoards);
@@ -50,8 +45,16 @@ export function BoardSelector({ currentBoardId, onSelectBoard, onCreateBoard }: 
   const handleCreateCustom = async () => {
     const board = await createBoard({
       name: newBoardName || 'New Board',
-      columns: customColumns.map((label, i) => ({ id: `col${i}`, label })),
-      rows: customRows.map((row, i) => ({ id: `row${i}`, label: row.label, colour: row.colour })),
+      columns: [
+        { id: 'col1', label: 'Column 1' },
+        { id: 'col2', label: 'Column 2' },
+        { id: 'col3', label: 'Column 3' },
+      ],
+      rows: [
+        { id: 'row1', label: 'Row 1', colour: 'pink' },
+        { id: 'row2', label: 'Row 2', colour: 'blue' },
+        { id: 'row3', label: 'Row 3', colour: 'yellow' },
+      ],
       createdBy: user?.name,
       createdById: user?.id,
     });
@@ -87,16 +90,28 @@ export function BoardSelector({ currentBoardId, onSelectBoard, onCreateBoard }: 
     });
   };
 
+  const currentBoard = boards.find(b => b.id === currentBoardId);
+
   return (
     <div className={styles.boardSelector}>
       <div className={styles.boardSelectorHeader}>
         <h3>Your Boards</h3>
-        <button 
-          className={styles.newBoardBtn}
-          onClick={() => setShowNewBoard(true)}
-        >
-          + New Board
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {currentBoard && (
+            <button 
+              className={styles.shareBtn}
+              onClick={() => setShowShareModal(true)}
+            >
+              🔗 Share
+            </button>
+          )}
+          <button 
+            className={styles.newBoardBtn}
+            onClick={() => setShowNewBoard(true)}
+          >
+            + New Board
+          </button>
+        </div>
       </div>
 
       <div className={styles.boardList}>
@@ -196,6 +211,15 @@ export function BoardSelector({ currentBoardId, onSelectBoard, onCreateBoard }: 
             </div>
           </div>
         </div>
+      )}
+
+      {currentBoard && (
+        <ShareModal
+          boardId={currentBoard.id}
+          boardName={currentBoard.name}
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+        />
       )}
     </div>
   );

@@ -16,6 +16,7 @@ interface NoteModalProps {
   onRestoreVersion: (noteId: string, version: NoteVersion) => Promise<void>;
   categories: { id: string; label: string }[];
   timeframes: { id: string; label: string }[];
+  readOnly?: boolean;
 }
 
 export function NoteModal({ 
@@ -28,6 +29,7 @@ export function NoteModal({
   onRestoreVersion,
   categories,
   timeframes,
+  readOnly = false,
 }: NoteModalProps) {
   const { user } = useUser();
   const [text, setText] = useState('');
@@ -61,6 +63,7 @@ export function NoteModal({
   if (!isOpen) return null;
 
   const handleSave = async () => {
+    if (readOnly) return;
     const tags = tagsInput
       .split(',')
       .map((t) => t.trim())
@@ -79,6 +82,7 @@ export function NoteModal({
   };
 
   const handleDelete = async () => {
+    if (readOnly) return;
     if (note && confirm('Are you sure you want to delete this note?')) {
       await onDelete(note.id);
       onClose();
@@ -109,6 +113,7 @@ export function NoteModal({
   };
 
   const handleRestore = async (version: NoteVersion) => {
+    if (readOnly) return;
     if (note && confirm('Restore this version? Current changes will be saved to history.')) {
       await onRestoreVersion(note.id, version);
       onClose();
@@ -144,12 +149,13 @@ export function NoteModal({
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Enter your idea..."
+            disabled={readOnly}
           />
         </div>
 
         <div className={styles.formGroup}>
           <label>Category</label>
-          <select value={category} onChange={(e) => setCategory(e.target.value)}>
+          <select value={category} onChange={(e) => setCategory(e.target.value)} disabled={readOnly}>
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id}>
                 {cat.label}
@@ -160,7 +166,7 @@ export function NoteModal({
 
         <div className={styles.formGroup}>
           <label>Timeframe</label>
-          <select value={timeframe} onChange={(e) => setTimeframe(e.target.value)}>
+          <select value={timeframe} onChange={(e) => setTimeframe(e.target.value)} disabled={readOnly}>
             {timeframes.map((tf) => (
               <option key={tf.id} value={tf.id}>
                 {tf.label}
@@ -176,18 +182,21 @@ export function NoteModal({
             value={tagsInput}
             onChange={(e) => setTagsInput(e.target.value)}
             placeholder="e.g. Q1, Priority, Research"
+            disabled={readOnly}
           />
         </div>
 
-        <div className={styles.voteControls}>
-          <span>Votes: {votes}</span>
-          <button className={styles.voteBtn} onClick={() => note && onVote(note.id, -1)}>
-            -1 Vote
-          </button>
-          <button className={styles.voteBtn} onClick={() => note && onVote(note.id, 1)}>
-            +1 Vote
-          </button>
-        </div>
+        {!readOnly && (
+          <div className={styles.voteControls}>
+            <span>Votes: {votes}</span>
+            <button className={styles.voteBtn} onClick={() => note && onVote(note.id, -1)}>
+              -1 Vote
+            </button>
+            <button className={styles.voteBtn} onClick={() => note && onVote(note.id, 1)}>
+              +1 Vote
+            </button>
+          </div>
+        )}
 
         {note && note.history && note.history.length > 0 && (
           <div className={styles.historySection}>
@@ -212,12 +221,14 @@ export function NoteModal({
                         {version.editedBy} • {formatDate(version.timestamp)}
                       </div>
                     </div>
-                    <button 
-                      className={styles.restoreBtn}
-                      onClick={() => handleRestore(version)}
-                    >
-                      Restore
-                    </button>
+                    {!readOnly && (
+                      <button 
+                        className={styles.restoreBtn}
+                        onClick={() => handleRestore(version)}
+                      >
+                        Restore
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -240,12 +251,14 @@ export function NoteModal({
                     <div className={styles.commentHeader}>
                       <span className={styles.commentAuthor}>{comment.author}</span>
                       <span className={styles.commentDate}>{formatDate(comment.createdAt)}</span>
-                      <button 
-                        className={styles.commentDelete}
-                        onClick={() => handleDeleteComment(comment.id)}
-                      >
-                        ✕
-                      </button>
+                      {!readOnly && (
+                        <button 
+                          className={styles.commentDelete}
+                          onClick={() => handleDeleteComment(comment.id)}
+                        >
+                          ✕
+                        </button>
+                      )}
                     </div>
                     <p className={styles.commentText}>{comment.text}</p>
                   </div>
@@ -253,32 +266,36 @@ export function NoteModal({
               )}
             </div>
 
-            <div className={styles.addComment}>
-              <textarea
-                placeholder="Add a comment..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                className={styles.commentInput}
-              />
-              <button 
-                className={styles.addCommentBtn}
-                onClick={handleAddComment}
-                disabled={!newComment.trim()}
-              >
-                Add Comment
-              </button>
-            </div>
+            {!readOnly && (
+              <div className={styles.addComment}>
+                <textarea
+                  placeholder="Add a comment..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  className={styles.commentInput}
+                />
+                <button 
+                  className={styles.addCommentBtn}
+                  onClick={handleAddComment}
+                  disabled={!newComment.trim()}
+                >
+                  Add Comment
+                </button>
+              </div>
+            )}
           </div>
         )}
 
         <div className={styles.modalActions}>
-          <button className={styles.saveBtn} onClick={handleSave}>
-            {note ? 'Save Changes' : 'Create Note'}
-          </button>
+          {!readOnly && (
+            <button className={styles.saveBtn} onClick={handleSave}>
+              {note ? 'Save Changes' : 'Create Note'}
+            </button>
+          )}
           <button className={styles.cancelBtn} onClick={onClose}>
-            Cancel
+            {readOnly ? 'Close' : 'Cancel'}
           </button>
-          {note && (
+          {!readOnly && note && (
             <button className={styles.deleteBtn} onClick={handleDelete}>
               Delete
             </button>

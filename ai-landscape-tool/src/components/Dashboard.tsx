@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Note, Category, Timeframe, ViewMode, FilterState, Board } from '@/types';
 import { useNotes, useConnections, useFilteredNotes, useStats } from '@/lib/hooks';
 import { useUser } from '@/lib/userContext';
 import { NoteCard } from './NoteCard';
 import { NoteModal } from './NoteModal';
 import { QuickAddNote } from './QuickAddNote';
+import { PresenceAvatars } from './PresenceAvatars';
 import { exportToJSON, exportToCSV, exportToPDF } from '@/lib/export';
 import { DndContext, DragEndEvent } from '@dnd-kit/core';
 import { DraggableNoteCard } from './DraggableNoteCard';
@@ -16,6 +17,7 @@ import styles from '@/app/Dashboard.module.css';
 
 interface DashboardProps {
   board: Board;
+  readOnly?: boolean;
 }
 
 function getRotation(id: string): number {
@@ -25,7 +27,7 @@ function getRotation(id: string): number {
 
 type SortOption = 'newest' | 'oldest' | 'mostVotes' | 'leastVotes' | 'alphabetical';
 
-export function Dashboard({ board }: DashboardProps) {
+export function Dashboard({ board, readOnly = false }: DashboardProps) {
   const { notes, loading, addNote, editNote, removeNote, vote, undo, canUndo, restoreVersion, authors } = useNotes(board.id);
   const { connections, addConnection } = useConnections(board.id);
   const { user } = useUser();
@@ -69,11 +71,13 @@ export function Dashboard({ board }: DashboardProps) {
   };
 
   const handleAddNote = () => {
+    if (readOnly) return;
     setSelectedNote(null);
     setIsModalOpen(true);
   };
 
   const handleQuickAdd = async (text: string, category: Category, timeframe: Timeframe) => {
+    if (readOnly) return;
     await addNote({
       text,
       category,
@@ -85,6 +89,7 @@ export function Dashboard({ board }: DashboardProps) {
   };
 
   const handleSaveNote = async (data: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'boardId'>) => {
+    if (readOnly) return;
     if (selectedNote) {
       await editNote(selectedNote.id, data);
     } else {
@@ -93,6 +98,7 @@ export function Dashboard({ board }: DashboardProps) {
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
+    if (readOnly) return;
     const { active, over } = event;
     if (!over) return;
     
@@ -103,6 +109,11 @@ export function Dashboard({ board }: DashboardProps) {
     if (note && (note.category !== newCategory || note.timeframe !== newTimeframe)) {
       await editNote(noteId, { category: newCategory, timeframe: newTimeframe });
     }
+  };
+
+  const handleVote = async (id: string, increment: number) => {
+    if (readOnly) return;
+    await vote(id, increment);
   };
 
   const toggleRowCollapse = (rowId: string) => {
@@ -132,29 +143,43 @@ export function Dashboard({ board }: DashboardProps) {
       notes={processedNotes}
       connections={connections}
       onNoteClick={handleNoteClick}
-      onConnect={addConnection}
+      onConnect={readOnly ? () => {} : addConnection}
     />
   );
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>{board.name}</h1>
-        {board.description && (
-          <p className={styles.subtitle}>{board.description}</p>
-        )}
-        {user && (
-          <div className={styles.userBadge} style={{ backgroundColor: user.colour }}>
-            {user.name}
+        <div className={styles.headerRow}>
+          <div>
+            <h1 className={styles.title}>{board.name}</h1>
+            {board.description && (
+              <p className={styles.subtitle}>{board.description}</p>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <PresenceAvatars boardId={board.id} />
+            {user && (
+              <div className={styles.userBadge} style={{ backgroundColor: user.colour }}>
+                {user.name}
+              </div>
+            )}
+          </div>
+        </div>
+        {readOnly && (
+          <div className={styles.readOnlyBanner}>
+            👁️ View only mode - you cannot make changes
           </div>
         )}
       </header>
 
-      <QuickAddNote
-        onAdd={handleQuickAdd}
-        categories={board.rows.map(r => ({ id: r.id, label: r.label }))}
-        timeframes={board.columns.map(c => ({ id: c.id, label: c.label }))}
-      />
+      {!readOnly && (
+        <QuickAddNote
+          onAdd={handleQuickAdd}
+          categories={board.rows.map(r => ({ id: r.id, label: r.label }))}
+          timeframes={board.columns.map(c => ({ id: c.id, label: c.label }))}
+        />
+      )}
 
       <div className={styles.stats}>
         <div className={styles.stat}>
@@ -274,17 +299,22 @@ export function Dashboard({ board }: DashboardProps) {
           </select>
         )}
 
-        <button 
-          className={styles.undoBtn} 
-          onClick={undo}
-          disabled={!canUndo}
-        >
-          ↩ Undo
-        </button>
+        {!readOnly && (
+          <>
+            <button 
+              className={styles.undoBtn} 
+              onClick={undo}
+              disabled={!canUndo}
+            >
+              ↩ Undo
+            </button>
 
-        <button className={styles.addNoteBtn} onClick={handleAddNote}>
-          + Add Note
-        </button>
+            <button className={styles.addNoteBtn} onClick={handleAddNote}>
+              + Add Note
+            </button>
+          </>
+        )}
+        
         <button className={styles.filterBtn} onClick={() => exportToJSON(notes)}>JSON</button>
         <button className={styles.filterBtn} onClick={() => exportToCSV(notes)}>CSV</button>
         <button className={styles.filterBtn} onClick={() => exportToPDF(notes)}>PDF</button>
@@ -312,7 +342,7 @@ export function Dashboard({ board }: DashboardProps) {
             {board.rows.map((row) => (
               <div 
                 key={row.id} 
-                className={`${styles.boardRow}`}
+                className={styles.boardRow}
                 style={{ 
                   gridTemplateColumns: `180px repeat(${board.columns.length}, 1fr)`,
                   background: `rgba(${row.colour === 'pink' ? '254,215,215' : row.colour === 'blue' ? '190,227,248' : '250,240,137'}, 0.1)`
@@ -336,7 +366,7 @@ export function Dashboard({ board }: DashboardProps) {
                         key={note.id}
                         note={note}
                         onClick={() => handleNoteClick(note)}
-                        onVote={vote}
+                        onVote={handleVote}
                         rotation={getRotation(note.id)}
                       />
                     ))}
@@ -360,7 +390,7 @@ export function Dashboard({ board }: DashboardProps) {
               key={note.id}
               note={note}
               onClick={() => handleNoteClick(note)}
-              onVote={vote}
+              onVote={handleVote}
               rotation={getRotation(note.id)}
             />
           ))}
@@ -391,11 +421,12 @@ export function Dashboard({ board }: DashboardProps) {
           setSelectedNote(null);
         }}
         onSave={handleSaveNote}
-        onDelete={removeNote}
-        onVote={vote}
-        onRestoreVersion={restoreVersion}
+        onDelete={readOnly ? async () => {} : removeNote}
+        onVote={handleVote}
+        onRestoreVersion={readOnly ? async () => {} : restoreVersion}
         categories={board.rows.map(r => ({ id: r.id, label: r.label }))}
         timeframes={board.columns.map(c => ({ id: c.id, label: c.label }))}
+        readOnly={readOnly}
       />
     </div>
   );

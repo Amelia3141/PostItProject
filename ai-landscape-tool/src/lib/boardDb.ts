@@ -5,6 +5,17 @@ import { v4 as uuidv4 } from 'uuid';
 
 const BOARDS_PATH = 'boards';
 
+// Helper to remove undefined values (Firebase doesn't accept them)
+function cleanObject<T extends Record<string, any>>(obj: T): T {
+  const cleaned = { ...obj };
+  Object.keys(cleaned).forEach(key => {
+    if (cleaned[key] === undefined) {
+      delete cleaned[key];
+    }
+  });
+  return cleaned;
+}
+
 export async function createBoard(data: {
   name: string;
   description?: string;
@@ -17,7 +28,7 @@ export async function createBoard(data: {
   const id = uuidv4();
   const now = Date.now();
 
-  const board: Board = {
+  const board: Board = cleanObject({
     id,
     name: data.name,
     description: data.description,
@@ -28,7 +39,7 @@ export async function createBoard(data: {
     createdBy: data.createdBy,
     createdById: data.createdById,
     archived: false,
-  };
+  });
 
   await set(ref(db, `${BOARDS_PATH}/${id}`), board);
   return board;
@@ -36,10 +47,10 @@ export async function createBoard(data: {
 
 export async function updateBoard(id: string, data: Partial<Board>): Promise<void> {
   const db = getDb();
-  await update(ref(db, `${BOARDS_PATH}/${id}`), {
+  await update(ref(db, `${BOARDS_PATH}/${id}`), cleanObject({
     ...data,
     updatedAt: Date.now(),
-  });
+  }));
 }
 
 export async function archiveBoard(id: string, archivedBy: string): Promise<void> {
@@ -143,7 +154,7 @@ export async function duplicateBoard(
       const note = notes[noteId] as Note;
       if (note.boardId === boardId) {
         const newNoteId = uuidv4();
-        await set(ref(db, `notes/${newNoteId}`), {
+        await set(ref(db, `notes/${newNoteId}`), cleanObject({
           ...note,
           id: newNoteId,
           boardId: newBoard.id,
@@ -151,7 +162,7 @@ export async function duplicateBoard(
           updatedAt: Date.now(),
           comments: [],
           history: [],
-        });
+        }));
       }
     }
   }

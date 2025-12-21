@@ -30,6 +30,7 @@ export default function AdminPage() {
           { id: 'not-important', label: 'Not Important', colour: 'blue' },
         ],
         createdBy: 'System',
+        createdById: 'system',
       });
 
       setStatus('Adding tasks...');
@@ -85,6 +86,7 @@ export default function AdminPage() {
           tags: task.tags,
           connections: [],
           createdBy: 'System',
+          createdById: 'system',
         });
       }
 
@@ -99,6 +101,7 @@ export default function AdminPage() {
           tags: [...task.tags, 'completed'],
           connections: [],
           createdBy: 'System',
+          createdById: 'system',
         });
       }
 

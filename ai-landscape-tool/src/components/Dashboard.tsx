@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { Note, Category, Timeframe, ViewMode, FilterState, Board } from '@/types';
 import { useNotes, useConnections, useFilteredNotes, useStats } from '@/lib/hooks';
 import { useUser } from '@/lib/userContext';
+import { logActivity } from '@/lib/activityDb';
 import { NoteCard } from './NoteCard';
 import { NoteModal } from './NoteModal';
 import { QuickAddNote } from './QuickAddNote';
 import { PresenceAvatars } from './PresenceAvatars';
+import { ActivityFeed } from './ActivityFeed';
 import { exportToJSON, exportToCSV, exportToPDF } from '@/lib/export';
 import { DndContext, DragEndEvent } from '@dnd-kit/core';
 import { DraggableNoteCard } from './DraggableNoteCard';
@@ -77,8 +79,8 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
   };
 
   const handleQuickAdd = async (text: string, category: Category, timeframe: Timeframe) => {
-    if (readOnly) return;
-    await addNote({
+    if (readOnly || !user) return;
+    const newNote = await addNote({
       text,
       category,
       timeframe,
@@ -86,19 +88,29 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
       tags: [],
       connections: [],
     });
+    await logActivity(board.id, 'note_created', user.id, user.name, user.colour, newNote?.id, text);
   };
 
   const handleSaveNote = async (data: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'boardId'>) => {
-    if (readOnly) return;
+    if (readOnly || !user) return;
     if (selectedNote) {
       await editNote(selectedNote.id, data);
+      await logActivity(board.id, 'note_edited', user.id, user.name, user.colour, selectedNote.id, data.text);
     } else {
-      await addNote(data);
+      const newNote = await addNote(data);
+      await logActivity(board.id, 'note_created', user.id, user.name, user.colour, newNote?.id, data.text);
     }
   };
 
+  const handleDeleteNote = async (id: string) => {
+    if (readOnly || !user) return;
+    const note = notes.find(n => n.id === id);
+    await removeNote(id);
+    await logActivity(board.id, 'note_deleted', user.id, user.name, user.colour, id, note?.text);
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
-    if (readOnly) return;
+    if (readOnly || !user) return;
     const { active, over } = event;
     if (!over) return;
     
@@ -108,12 +120,27 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
     const note = notes.find(n => n.id === noteId);
     if (note && (note.category !== newCategory || note.timeframe !== newTimeframe)) {
       await editNote(noteId, { category: newCategory, timeframe: newTimeframe });
+      const fromRow = board.rows.find(r => r.id === note.category)?.label || note.category;
+      const toRow = board.rows.find(r => r.id === newCategory)?.label || newCategory;
+      const fromCol = board.columns.find(c => c.id === note.timeframe)?.label || note.timeframe;
+      const toCol = board.columns.find(c => c.id === newTimeframe)?.label || newTimeframe;
+      await logActivity(board.id, 'note_moved', user.id, user.name, user.colour, noteId, note.text, `${fromRow}/${fromCol} → ${toRow}/${toCol}`);
     }
   };
 
   const handleVote = async (id: string, increment: number) => {
-    if (readOnly) return;
+    if (readOnly || !user) return;
     await vote(id, increment);
+    const note = notes.find(n => n.id === id);
+    await logActivity(board.id, 'vote', user.id, user.name, user.colour, id, note?.text, increment > 0 ? '+1' : '-1');
+  };
+
+  const handleConnect = async (sourceId: string, targetId: string) => {
+    if (readOnly || !user) return;
+    await addConnection(sourceId, targetId);
+    const sourceNote = notes.find(n => n.id === sourceId);
+    const targetNote = notes.find(n => n.id === targetId);
+    await logActivity(board.id, 'connection_created', user.id, user.name, user.colour, undefined, undefined, `"${sourceNote?.text?.substring(0, 20)}..." → "${targetNote?.text?.substring(0, 20)}..."`);
   };
 
   const toggleRowCollapse = (rowId: string) => {
@@ -143,7 +170,7 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
       notes={processedNotes}
       connections={connections}
       onNoteClick={handleNoteClick}
-      onConnect={readOnly ? () => {} : addConnection}
+      onConnect={handleConnect}
     />
   );
 
@@ -180,6 +207,8 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
           timeframes={board.columns.map(c => ({ id: c.id, label: c.label }))}
         />
       )}
+
+      <ActivityFeed boardId={board.id} />
 
       <div className={styles.stats}>
         <div className={styles.stat}>
@@ -421,9 +450,9 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
           setSelectedNote(null);
         }}
         onSave={handleSaveNote}
-        onDelete={readOnly ? async () => {} : removeNote}
+        onDelete={handleDeleteNote}
         onVote={handleVote}
-        onRestoreVersion={readOnly ? async () => {} : restoreVersion}
+        onRestoreVersion={restoreVersion}
         categories={board.rows.map(r => ({ id: r.id, label: r.label }))}
         timeframes={board.columns.map(c => ({ id: c.id, label: c.label }))}
         readOnly={readOnly}

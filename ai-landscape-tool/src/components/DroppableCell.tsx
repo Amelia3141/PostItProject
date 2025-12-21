@@ -13,7 +13,6 @@ interface DroppableCellProps {
 export function DroppableCell({ category, timeframe, children }: DroppableCellProps) {
   const { isOver, setNodeRef } = useDroppable({
     id: `${category}-${timeframe}`,
-    data: { category, timeframe },
   });
 
   return (
@@ -21,8 +20,7 @@ export function DroppableCell({ category, timeframe, children }: DroppableCellPr
       ref={setNodeRef}
       className={styles.boardCell}
       style={{
-        backgroundColor: isOver ? 'rgba(102, 126, 234, 0.1)' : undefined,
-        transition: 'background-color 0.2s',
+        backgroundColor: isOver ? 'rgba(0, 0, 0, 0.05)' : undefined,
       }}
     >
       {children}

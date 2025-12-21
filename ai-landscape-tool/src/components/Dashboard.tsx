@@ -12,7 +12,7 @@ import { PresenceAvatars } from './PresenceAvatars';
 import { ActivityFeed } from './ActivityFeed';
 import { ThemeToggle } from './ThemeToggle';
 import { exportToJSON, exportToCSV, exportToPDF } from '@/lib/export';
-import { DndContext, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { DraggableNoteCard } from './DraggableNoteCard';
 import { DroppableCell } from './DroppableCell';
 import { FlowView } from './FlowView';
@@ -34,6 +34,15 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
   const { notes, loading, addNote, editNote, removeNote, vote, undo, canUndo, restoreVersion, authors } = useNotes(board.id);
   const { connections, addConnection } = useConnections(board.id);
   const { user } = useUser();
+  
+  // Add activation constraint - must drag at least 8px before drag starts
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
   
   const [viewMode, setViewMode] = useState<ViewMode>('board');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
@@ -116,7 +125,20 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
     if (!over) return;
     
     const noteId = active.id as string;
-    const [newCategory, newTimeframe] = (over.id as string).split('-') as [Category, Timeframe];
+    const targetId = over.id as string;
+    
+    // Parse the target cell ID - format is "category-timeframe"
+    const parts = targetId.split('-');
+    if (parts.length < 2) return;
+    
+    // Find the matching row and column by ID
+    const targetRow = board.rows.find(r => targetId.startsWith(r.id + '-'));
+    const targetCol = board.columns.find(c => targetId.endsWith('-' + c.id));
+    
+    if (!targetRow || !targetCol) return;
+    
+    const newCategory = targetRow.id as Category;
+    const newTimeframe = targetCol.id as Timeframe;
     
     const note = notes.find(n => n.id === noteId);
     if (note && (note.category !== newCategory || note.timeframe !== newTimeframe)) {
@@ -360,12 +382,12 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
       </div>
 
       {viewMode === 'board' && (
-        <DndContext onDragEnd={handleDragEnd}>
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           <div className={`${styles.board} ${styles.fadeIn}`}>
             <div className={styles.boardHeader} style={{ gridTemplateColumns: `180px repeat(${board.columns.length}, 1fr)` }}>
               <div className={styles.boardRowLabel}></div>
               {board.columns.map((col) => (
-                <div key={col.id} className={`${styles.timeframeHeader} ${col.colour ? styles[col.colour] : ""}`}>{col.label}</div>
+                <div key={col.id} className={`${styles.timeframeHeader} ${col.colour ? styles[col.colour] : ''}`}>{col.label}</div>
               ))}
             </div>
 

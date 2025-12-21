@@ -2,28 +2,39 @@
 
 import { useState, useEffect } from 'react';
 import { Board, BoardTemplate } from '@/types';
-import { subscribeToBoards, createBoard, deleteBoard, duplicateBoard } from '@/lib/boardDb';
+import { subscribeToBoards, createBoard, deleteBoard, duplicateBoard, archiveBoard } from '@/lib/boardDb';
 import { boardTemplates } from '@/data/templates';
 import { useUser } from '@/lib/userContext';
 import { ShareModal } from './ShareModal';
+import { BoardSettings } from './BoardSettings';
+import { ArchivedBoards } from './ArchivedBoards';
 import styles from '@/app/Dashboard.module.css';
 
 interface BoardSelectorProps {
   currentBoardId: string | null;
   onSelectBoard: (boardId: string) => void;
   onCreateBoard: (board: Board) => void;
+  onUpdateBoard: (board: Board) => void;
 }
 
-export function BoardSelector({ currentBoardId, onSelectBoard, onCreateBoard }: BoardSelectorProps) {
+export function BoardSelector({ currentBoardId, onSelectBoard, onCreateBoard, onUpdateBoard }: BoardSelectorProps) {
   const { user } = useUser();
   const [boards, setBoards] = useState<Board[]>([]);
+  const [archivedCount, setArchivedCount] = useState(0);
   const [showNewBoard, setShowNewBoard] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [newBoardName, setNewBoardName] = useState('');
 
   useEffect(() => {
-    const unsubscribe = subscribeToBoards(setBoards);
+    const unsubscribe = subscribeToBoards((allBoards) => {
+      const active = allBoards.filter(b => !b.archived);
+      const archived = allBoards.filter(b => b.archived);
+      setBoards(active);
+      setArchivedCount(archived.length);
+    });
     return () => unsubscribe();
   }, []);
 
@@ -73,13 +84,52 @@ export function BoardSelector({ currentBoardId, onSelectBoard, onCreateBoard }: 
     onCreateBoard(newBoard);
   };
 
-  const handleDelete = async (boardId: string) => {
-    if (confirm('Delete this board? All notes will be lost.')) {
-      await deleteBoard(boardId);
-      if (currentBoardId === boardId) {
-        onSelectBoard(boards.find(b => b.id !== boardId)?.id || '');
+  const handleArchive = async (board: Board) => {
+    if (!user) return;
+    await archiveBoard(board.id, user.name);
+    if (currentBoardId === board.id) {
+      const remaining = boards.filter(b => b.id !== board.id);
+      if (remaining.length > 0) {
+        onSelectBoard(remaining[0].id);
       }
     }
+  };
+
+  const handleDelete = async (board: Board) => {
+    const shouldArchive = confirm(
+      `Are you sure you want to delete "${board.name}"?\n\nClick "Cancel" to archive instead (recommended).`
+    );
+    
+    if (shouldArchive) {
+      const confirmDelete = confirm(
+        `This will permanently delete "${board.name}" and all its notes.\n\nAre you absolutely sure?`
+      );
+      if (confirmDelete) {
+        await deleteBoard(board.id);
+        if (currentBoardId === board.id) {
+          const remaining = boards.filter(b => b.id !== board.id);
+          if (remaining.length > 0) {
+            onSelectBoard(remaining[0].id);
+          }
+        }
+      }
+    } else {
+      // User clicked Cancel, offer to archive
+      if (user) {
+        await archiveBoard(board.id, user.name);
+        if (currentBoardId === board.id) {
+          const remaining = boards.filter(b => b.id !== board.id);
+          if (remaining.length > 0) {
+            onSelectBoard(remaining[0].id);
+          }
+        }
+      }
+    }
+  };
+
+  const handleUnarchive = (board: Board) => {
+    onCreateBoard(board);
+    setShowArchived(false);
   };
 
   const formatDate = (timestamp: number) => {
@@ -98,12 +148,20 @@ export function BoardSelector({ currentBoardId, onSelectBoard, onCreateBoard }: 
         <h3>Your Boards</h3>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {currentBoard && (
-            <button 
-              className={styles.shareBtn}
-              onClick={() => setShowShareModal(true)}
-            >
-              🔗 Share
-            </button>
+            <>
+              <button 
+                className={styles.settingsBtn}
+                onClick={() => setShowSettings(true)}
+              >
+                Settings
+              </button>
+              <button 
+                className={styles.shareBtn}
+                onClick={() => setShowShareModal(true)}
+              >
+                Share
+              </button>
+            </>
           )}
           <button 
             className={styles.newBoardBtn}
@@ -142,14 +200,31 @@ export function BoardSelector({ currentBoardId, onSelectBoard, onCreateBoard }: 
                 </button>
                 <button
                   className={styles.boardActionBtn}
-                  onClick={(e) => { e.stopPropagation(); handleDelete(board.id); }}
+                  onClick={(e) => { e.stopPropagation(); handleArchive(board); }}
+                  title="Archive"
+                >
+                  ⌂
+                </button>
+                <button
+                  className={styles.boardActionBtn}
+                  onClick={(e) => { e.stopPropagation(); handleDelete(board); }}
                   title="Delete"
                 >
-                  🗑
+                  ×
                 </button>
               </div>
             </div>
           ))
+        )}
+        
+        {archivedCount > 0 && (
+          <div 
+            className={styles.archivedBoardsLink}
+            onClick={() => setShowArchived(true)}
+          >
+            <span className={styles.archiveIcon}>◫</span>
+            <span>{archivedCount} archived</span>
+          </div>
         )}
       </div>
 
@@ -174,13 +249,13 @@ export function BoardSelector({ currentBoardId, onSelectBoard, onCreateBoard }: 
                   className={styles.createOptionBtn}
                   onClick={() => setShowTemplates(true)}
                 >
-                  📋 Use Template
+                  Use Template
                 </button>
                 <button 
                   className={styles.createOptionBtn}
                   onClick={handleCreateCustom}
                 >
-                  ✏️ Custom Board
+                  Custom Board
                 </button>
               </div>
             ) : (
@@ -214,13 +289,27 @@ export function BoardSelector({ currentBoardId, onSelectBoard, onCreateBoard }: 
       )}
 
       {currentBoard && (
-        <ShareModal
-          boardId={currentBoard.id}
-          boardName={currentBoard.name}
-          isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
-        />
+        <>
+          <ShareModal
+            boardId={currentBoard.id}
+            boardName={currentBoard.name}
+            isOpen={showShareModal}
+            onClose={() => setShowShareModal(false)}
+          />
+          <BoardSettings
+            board={currentBoard}
+            isOpen={showSettings}
+            onClose={() => setShowSettings(false)}
+            onUpdate={onUpdateBoard}
+          />
+        </>
       )}
+
+      <ArchivedBoards
+        isOpen={showArchived}
+        onClose={() => setShowArchived(false)}
+        onUnarchive={handleUnarchive}
+      />
     </div>
   );
 }

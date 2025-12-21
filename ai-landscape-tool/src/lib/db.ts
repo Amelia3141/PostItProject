@@ -2,170 +2,174 @@ import {
   ref,
   set,
   get,
-  update,
   remove,
   onValue,
   off,
-  DataSnapshot,
-  DatabaseReference,
+  update,
+  push,
 } from 'firebase/database';
 import { getDb } from './firebase';
-import { Note, Connection, Workshop, Comment } from '@/types';
+import { Note, Connection, Comment } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
 const NOTES_PATH = 'notes';
 const CONNECTIONS_PATH = 'connections';
-const WORKSHOPS_PATH = 'workshops';
 
-function getDbRef(path: string): DatabaseReference {
+export async function createNote(data: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>): Promise<Note> {
   const db = getDb();
-  return ref(db, path);
-}
-
-export async function createNote(note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>): Promise<Note> {
   const id = uuidv4();
   const now = Date.now();
-  const newNote: Note = {
-    ...note,
+
+  const note: Note = {
+    ...data,
     id,
     createdAt: now,
     updatedAt: now,
+    votes: data.votes || 0,
+    tags: data.tags || [],
+    connections: data.connections || [],
+    comments: data.comments || [],
+    history: data.history || [],
   };
-  
-  await set(getDbRef(NOTES_PATH + '/' + id), newNote);
-  return newNote;
+
+  await set(ref(db, `${NOTES_PATH}/${id}`), note);
+  return note;
 }
 
-export async function updateNote(id: string, updates: Partial<Note>): Promise<void> {
-  const updateData = {
-    ...updates,
+export async function updateNote(id: string, data: Partial<Note>): Promise<void> {
+  const db = getDb();
+  await update(ref(db, `${NOTES_PATH}/${id}`), {
+    ...data,
     updatedAt: Date.now(),
-  };
-  await update(getDbRef(NOTES_PATH + '/' + id), updateData);
+  });
 }
 
 export async function deleteNote(id: string): Promise<void> {
-  await remove(getDbRef(NOTES_PATH + '/' + id));
+  const db = getDb();
+  await remove(ref(db, `${NOTES_PATH}/${id}`));
 }
 
 export async function getNote(id: string): Promise<Note | null> {
-  const snapshot = await get(getDbRef(NOTES_PATH + '/' + id));
-  return snapshot.exists() ? (snapshot.val() as Note) : null;
+  const db = getDb();
+  const snapshot = await get(ref(db, `${NOTES_PATH}/${id}`));
+  if (!snapshot.exists()) return null;
+  return snapshot.val() as Note;
 }
 
 export async function getAllNotes(): Promise<Note[]> {
-  const snapshot = await get(getDbRef(NOTES_PATH));
+  const db = getDb();
+  const snapshot = await get(ref(db, NOTES_PATH));
   if (!snapshot.exists()) return [];
   return Object.values(snapshot.val()) as Note[];
 }
 
 export function subscribeToNotes(callback: (notes: Note[]) => void): () => void {
-  const notesRef = getDbRef(NOTES_PATH);
-  
-  const handleValue = (snapshot: DataSnapshot) => {
+  const db = getDb();
+  const notesRef = ref(db, NOTES_PATH);
+
+  const handleValue = (snapshot: any) => {
     if (!snapshot.exists()) {
       callback([]);
       return;
     }
-    callback(Object.values(snapshot.val()) as Note[]);
+    const notes = Object.values(snapshot.val()) as Note[];
+    callback(notes);
   };
-  
+
   onValue(notesRef, handleValue);
   return () => off(notesRef, 'value', handleValue);
-}
-
-export async function voteForNote(id: string, increment: number = 1): Promise<void> {
-  const note = await getNote(id);
-  if (note) {
-    await updateNote(id, { votes: Math.max(0, (note.votes || 0) + increment) });
-  }
 }
 
 export async function createConnection(
   sourceId: string,
   targetId: string,
-  label?: string,
   boardId?: string
 ): Promise<Connection> {
+  const db = getDb();
   const id = uuidv4();
+  
   const connection: Connection = {
     id,
-    boardId: boardId || '',
     sourceId,
     targetId,
-    createdAt: Date.now(),
+    boardId,
   };
   
-  if (label) {
-    connection.label = label;
-  }
-  
-  await set(getDbRef(CONNECTIONS_PATH + '/' + id), connection);
+  await set(ref(db, `${CONNECTIONS_PATH}/${id}`), connection);
   return connection;
 }
 
 export async function deleteConnection(id: string): Promise<void> {
-  await remove(getDbRef(CONNECTIONS_PATH + '/' + id));
-}
-
-export async function getAllConnections(): Promise<Connection[]> {
-  const snapshot = await get(getDbRef(CONNECTIONS_PATH));
-  if (!snapshot.exists()) return [];
-  return Object.values(snapshot.val()) as Connection[];
+  const db = getDb();
+  await remove(ref(db, `${CONNECTIONS_PATH}/${id}`));
 }
 
 export function subscribeToConnections(callback: (connections: Connection[]) => void): () => void {
-  const connectionsRef = getDbRef(CONNECTIONS_PATH);
-  
-  const handleValue = (snapshot: DataSnapshot) => {
+  const db = getDb();
+  const connectionsRef = ref(db, CONNECTIONS_PATH);
+
+  const handleValue = (snapshot: any) => {
     if (!snapshot.exists()) {
       callback([]);
       return;
     }
-    callback(Object.values(snapshot.val()) as Connection[]);
+    const connections = Object.values(snapshot.val()) as Connection[];
+    callback(connections);
   };
-  
+
   onValue(connectionsRef, handleValue);
   return () => off(connectionsRef, 'value', handleValue);
 }
 
-export async function addComment(noteId: string, text: string, author: string, authorId: string): Promise<void> {
-  const note = await getNote(noteId);
-  if (note) {
-    const comment: Comment = {
-      id: uuidv4(),
-      text,
-      author,
-      authorId,
-      createdAt: Date.now(),
-    };
-    const comments = [...(note.comments || []), comment];
-    await updateNote(noteId, { comments });
+export async function addComment(
+  noteId: string,
+  text: string,
+  author: string,
+  authorId: string
+): Promise<Comment> {
+  const db = getDb();
+  const id = uuidv4();
+  const comment: Comment = {
+    id,
+    text,
+    author,
+    authorId,
+    createdAt: Date.now(),
+  };
+
+  const noteRef = ref(db, `${NOTES_PATH}/${noteId}`);
+  const snapshot = await get(noteRef);
+  if (snapshot.exists()) {
+    const note = snapshot.val() as Note;
+    const comments = note.comments || [];
+    await update(noteRef, { comments: [...comments, comment] });
   }
+
+  return comment;
 }
 
 export async function deleteComment(noteId: string, commentId: string): Promise<void> {
-  const note = await getNote(noteId);
-  if (note && note.comments) {
-    const comments = note.comments.filter(c => c.id !== commentId);
-    await updateNote(noteId, { comments });
+  const db = getDb();
+  const noteRef = ref(db, `${NOTES_PATH}/${noteId}`);
+  const snapshot = await get(noteRef);
+  if (snapshot.exists()) {
+    const note = snapshot.val() as Note;
+    const comments = (note.comments || []).filter((c: Comment) => c.id !== commentId);
+    await update(noteRef, { comments });
   }
 }
 
-export async function seedDatabase(notes: Note[]): Promise<void> {
-  const existingNotes = await getAllNotes();
-  
-  if (existingNotes.length > 0) {
-    console.log('Database already has notes, skipping seed');
-    return;
-  }
-  
+export async function voteForNote(id: string, increment: number): Promise<void> {
   const db = getDb();
-  const updates: Record<string, Note> = {};
-  notes.forEach((note) => {
-    updates[NOTES_PATH + '/' + note.id] = note;
-  });
-  
-  await update(ref(db), updates);
-  console.log('Seeded ' + notes.length + ' notes');
+  const noteRef = ref(db, `${NOTES_PATH}/${id}`);
+  const snapshot = await get(noteRef);
+  if (snapshot.exists()) {
+    const note = snapshot.val() as Note;
+    const newVotes = (note.votes || 0) + increment;
+    await update(noteRef, { votes: newVotes, updatedAt: Date.now() });
+  }
+}
+
+export async function seedDatabase(): Promise<void> {
+  // No-op - kept for backwards compatibility
 }

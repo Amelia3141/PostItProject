@@ -2,127 +2,118 @@
 
 import { useState, useEffect } from 'react';
 import { Dashboard } from '@/components/Dashboard';
-import { NamePrompt } from '@/components/NamePrompt';
 import { BoardSelector } from '@/components/BoardSelector';
+import { NamePrompt } from '@/components/NamePrompt';
 import { UserProvider, useUser } from '@/lib/userContext';
 import { initFirebase } from '@/lib/firebase';
-import { Board, Note } from '@/types';
 import { subscribeToBoards, createBoard } from '@/lib/boardDb';
 import { subscribeToNotes, updateNote } from '@/lib/db';
+import { Board, Note } from '@/types';
 import { boardTemplates } from '@/data/templates';
 
 function AppContent() {
-  const { isNameSet, user } = useUser();
+  const { isNameSet } = useUser();
   const [boards, setBoards] = useState<Board[]>([]);
-  const [currentBoardId, setCurrentBoardId] = useState<string | null>(null);
+  const [currentBoard, setCurrentBoard] = useState<Board | null>(null);
   const [loading, setLoading] = useState(true);
   const [migrated, setMigrated] = useState(false);
 
   useEffect(() => {
     initFirebase();
     
-    const unsubscribeBoards = subscribeToBoards((fetchedBoards) => {
-      setBoards(fetchedBoards);
+    const unsubscribe = subscribeToBoards((updatedBoards) => {
+      setBoards(updatedBoards);
       
-      // Select most recent board if none selected
-      if (!currentBoardId && fetchedBoards.length > 0) {
-        setCurrentBoardId(fetchedBoards[0].id);
+      if (currentBoard) {
+        const updated = updatedBoards.find(b => b.id === currentBoard.id);
+        if (updated) {
+          setCurrentBoard(updated);
+        }
+      } else if (updatedBoards.length > 0 && !currentBoard) {
+        setCurrentBoard(updatedBoards[0]);
       }
       
       setLoading(false);
     });
 
-    return () => unsubscribeBoards();
-  }, [currentBoardId]);
+    return () => unsubscribe();
+  }, []);
 
-  // Migrate old notes without boardId to a legacy board
+  // Migration: check for orphaned notes without boardId
   useEffect(() => {
-    if (migrated || !isNameSet || !user || loading) return;
+    if (migrated || loading || boards.length > 0) return;
 
-    const unsubscribeNotes = subscribeToNotes(async (allNotes) => {
-      const orphanedNotes = allNotes.filter(n => !n.boardId);
+    const unsubNotes = subscribeToNotes((notes: Note[]) => {
+      const orphanedNotes = notes.filter(n => !n.boardId);
       
-      if (orphanedNotes.length > 0) {
-        // Check if legacy board already exists
-        const legacyBoard = boards.find(b => b.name === 'AI Landscape (Original)');
+      if (orphanedNotes.length > 0 && !migrated) {
+        setMigrated(true);
         
-        if (legacyBoard) {
+        // Create legacy board for orphaned notes
+        const template = boardTemplates.find(t => t.id === 'ai-landscape')!;
+        createBoard({
+          name: 'AI Landscape (Original)',
+          description: 'Original workshop notes migrated from previous version',
+          columns: template.columns,
+          rows: template.rows,
+        }).then((legacyBoard) => {
           // Assign orphaned notes to legacy board
-          for (const note of orphanedNotes) {
-            await updateNote(note.id, { boardId: legacyBoard.id });
-          }
-        } else {
-          // Create legacy board for old notes
-          const template = boardTemplates[0]; // AI Landscape template
-          const newBoard = await createBoard({
-            name: 'AI Landscape (Original)',
-            description: 'Original workshop notes migrated from previous version',
-            columns: template.columns,
-            rows: template.rows,
-            createdBy: user.name,
-            createdById: user.id,
+          orphanedNotes.forEach(note => {
+            updateNote(note.id, { boardId: legacyBoard.id });
           });
-          
-          // Assign orphaned notes to this board
-          for (const note of orphanedNotes) {
-            await updateNote(note.id, { boardId: newBoard.id });
-          }
-          
-          setCurrentBoardId(newBoard.id);
-        }
-      } else if (boards.length === 0 && isNameSet && user) {
+          setCurrentBoard(legacyBoard);
+        });
+      } else if (orphanedNotes.length === 0 && boards.length === 0 && !migrated) {
+        setMigrated(true);
         // No boards and no orphaned notes - create default board
-        const template = boardTemplates[0];
-        const newBoard = await createBoard({
-          name: 'AI Landscape Workshop',
+        const template = boardTemplates.find(t => t.id === 'ai-landscape')!;
+        createBoard({
+          name: template.name,
           description: template.description,
           columns: template.columns,
           rows: template.rows,
-          createdBy: user.name,
-          createdById: user.id,
-        });
-        setCurrentBoardId(newBoard.id);
+        }).then(setCurrentBoard);
       }
-      
-      setMigrated(true);
     });
 
-    return () => unsubscribeNotes();
-  }, [isNameSet, user, loading, boards, migrated]);
-
-  const handleSelectBoard = (boardId: string) => {
-    setCurrentBoardId(boardId);
-  };
-
-  const handleCreateBoard = (board: Board) => {
-    setCurrentBoardId(board.id);
-  };
+    return () => unsubNotes();
+  }, [boards, loading, migrated]);
 
   if (!isNameSet) {
     return <NamePrompt />;
   }
 
-  if (loading || !migrated) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>;
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        Loading...
+      </div>
+    );
   }
 
-  const currentBoard = boards.find(b => b.id === currentBoardId);
+  const handleSelectBoard = (boardId: string) => {
+    const board = boards.find(b => b.id === boardId);
+    if (board) setCurrentBoard(board);
+  };
+
+  const handleCreateBoard = (board: Board) => {
+    setCurrentBoard(board);
+  };
+
+  const handleUpdateBoard = (board: Board) => {
+    setCurrentBoard(board);
+  };
 
   return (
-    <div style={{ padding: '1rem' }}>
-      <BoardSelector 
-        currentBoardId={currentBoardId}
+    <main>
+      <BoardSelector
+        currentBoardId={currentBoard?.id || null}
         onSelectBoard={handleSelectBoard}
         onCreateBoard={handleCreateBoard}
+        onUpdateBoard={handleUpdateBoard}
       />
-      {currentBoard ? (
-        <Dashboard board={currentBoard} />
-      ) : (
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#6c757d' }}>
-          Select a board or create a new one to get started.
-        </div>
-      )}
-    </div>
+      {currentBoard && <Dashboard board={currentBoard} />}
+    </main>
   );
 }
 

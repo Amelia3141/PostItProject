@@ -10,6 +10,7 @@ import { NoteModal } from './NoteModal';
 import { QuickAddNote } from './QuickAddNote';
 import { PresenceAvatars } from './PresenceAvatars';
 import { ActivityFeed } from './ActivityFeed';
+import { ThemeToggle } from './ThemeToggle';
 import { exportToJSON, exportToCSV, exportToPDF } from '@/lib/export';
 import { DndContext, DragEndEvent } from '@dnd-kit/core';
 import { DraggableNoteCard } from './DraggableNoteCard';
@@ -184,18 +185,19 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
               <p className={styles.subtitle}>{board.description}</p>
             )}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div className={styles.headerActions}>
             <PresenceAvatars boardId={board.id} />
             {user && (
               <div className={styles.userBadge} style={{ backgroundColor: user.colour }}>
                 {user.name}
               </div>
             )}
+            <ThemeToggle />
           </div>
         </div>
         {readOnly && (
           <div className={styles.readOnlyBanner}>
-            👁️ View only mode - you cannot make changes
+            View only mode - you cannot make changes
           </div>
         )}
       </header>
@@ -228,7 +230,6 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
       {stats.topVoted.length > 0 && (
         <div className={styles.topVoted}>
           <div className={styles.topVotedHeader}>
-            <span className={styles.trophyIcon}>🏆</span>
             <h2>Top Voted Ideas</h2>
           </div>
           <div className={styles.topVotedList}>
@@ -335,7 +336,7 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
               onClick={undo}
               disabled={!canUndo}
             >
-              ↩ Undo
+              Undo
             </button>
 
             <button className={styles.addNoteBtn} onClick={handleAddNote}>
@@ -353,7 +354,7 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
             className={styles.filterBtn}
             onClick={() => setIsFullscreen(!isFullscreen)}
           >
-            {isFullscreen ? '⊙ Exit' : '⛶ Fullscreen'}
+            {isFullscreen ? 'Exit' : 'Fullscreen'}
           </button>
         )}
       </div>
@@ -364,7 +365,7 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
             <div className={styles.boardHeader} style={{ gridTemplateColumns: `180px repeat(${board.columns.length}, 1fr)` }}>
               <div className={styles.boardRowLabel}></div>
               {board.columns.map((col) => (
-                <div key={col.id} className={styles.timeframeHeader}>{col.label}</div>
+                <div key={col.id} className={`${styles.timeframeHeader} ${col.colour ? styles[col.colour] : ""}`}>{col.label}</div>
               ))}
             </div>
 
@@ -374,7 +375,6 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
                 className={styles.boardRow}
                 style={{ 
                   gridTemplateColumns: `180px repeat(${board.columns.length}, 1fr)`,
-                  background: `rgba(${row.colour === 'pink' ? '254,215,215' : row.colour === 'blue' ? '190,227,248' : '250,240,137'}, 0.1)`
                 }}
               >
                 <div className={styles.boardRowLabel}>
@@ -433,7 +433,7 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
               className={styles.exitFullscreenBtn}
               onClick={() => setIsFullscreen(false)}
             >
-              ✕ Exit Fullscreen
+              Exit Fullscreen
             </button>
             {flowViewContent}
           </div>
@@ -443,7 +443,6 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
       )}
 
       <NoteModal
-        boardId={board.id}
         note={selectedNote}
         isOpen={isModalOpen}
         onClose={() => {
@@ -457,6 +456,7 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
         categories={board.rows.map(r => ({ id: r.id, label: r.label }))}
         timeframes={board.columns.map(c => ({ id: c.id, label: c.label }))}
         readOnly={readOnly}
+        boardId={board.id}
       />
     </div>
   );

@@ -112,7 +112,7 @@ export function useNotes(boardId: string) {
   const seed = useCallback(async () => {
     try {
       const notesWithBoardId = seedNotes.map(n => ({ ...n, boardId } as Note));
-      await seedDatabase(notesWithBoardId);
+      // seedDatabase no longer used
     } catch (err) {
       setError(err as Error);
       throw err;
@@ -194,7 +194,7 @@ export function useConnections(boardId: string) {
   const addConnection = useCallback(
     async (sourceId: string, targetId: string, label?: string) => {
       try {
-        const newConnection = await createConnection(sourceId, targetId, label, boardId);
+        const newConnection = await createConnection(sourceId, targetId, boardId);
         return newConnection;
       } catch (err) {
         setError(err as Error);

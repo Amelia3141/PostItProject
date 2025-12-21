@@ -1,8 +1,10 @@
-/* Base Container */
+/* Base Container - SI Units inspired minimal design */
 .container {
   min-height: 100vh;
-  padding: 2rem;
-  background: #fafafa;
+  padding: 2rem 3rem;
+  background: #ffffff;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .loading {
@@ -10,13 +12,14 @@
   justify-content: center;
   align-items: center;
   height: 100vh;
-  font-size: 1.25rem;
+  font-size: 1rem;
   color: #666;
 }
 
 /* Header */
 .header {
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
+  text-align: center;
 }
 
 .headerRow {
@@ -28,75 +31,80 @@
 }
 
 .title {
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 700;
   color: #111;
   margin: 0;
-  font-family: 'Inter', sans-serif;
+  letter-spacing: -0.02em;
 }
 
 .subtitle {
   color: #666;
   font-size: 1rem;
-  margin: 0.5rem 0 0 0;
+  margin: 0.75rem 0 0 0;
+  font-weight: 400;
 }
 
 .userBadge {
   display: inline-block;
   padding: 0.5rem 1rem;
-  border-radius: 4px;
+  border-radius: 2px;
   color: white;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .readOnlyBanner {
-  background: #fff3cd;
-  color: #856404;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  background: #fef3c7;
+  color: #92400e;
+  padding: 0.75rem 1rem;
   font-size: 0.875rem;
-  margin-top: 0.5rem;
-  border: 1px solid #ffc107;
+  margin-top: 1rem;
+  text-align: center;
+  border-left: 3px solid #f59e0b;
 }
 
 /* Stats */
 .stats {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
+  gap: 0;
+  margin-bottom: 2.5rem;
+  border: 1px solid #e5e5e5;
 }
 
 .stat {
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  padding: 1.25rem 1.5rem;
+  flex: 1;
+  padding: 1.5rem 2rem;
   text-align: center;
-  min-width: 100px;
+  border-right: 1px solid #e5e5e5;
+}
+
+.stat:last-child {
+  border-right: none;
 }
 
 .statNumber {
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 700;
   color: #111;
+  line-height: 1;
 }
 
 .statLabel {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #666;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-top: 0.25rem;
+  letter-spacing: 0.1em;
+  margin-top: 0.5rem;
 }
 
 /* Top Voted */
 .topVoted {
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  margin-bottom: 2.5rem;
   padding: 1.5rem;
-  margin-bottom: 2rem;
+  border: 1px solid #e5e5e5;
 }
 
 .topVotedHeader {
@@ -107,10 +115,12 @@
 }
 
 .topVotedHeader h2 {
-  font-size: 1rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: #111;
   margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 .trophyIcon {
@@ -125,34 +135,30 @@
 }
 
 .topVotedItem {
-  flex: 0 0 220px;
+  flex: 0 0 240px;
   padding: 1rem;
-  border-radius: 4px;
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #e5e5e5;
 }
 
 .topVotedItem.pink {
-  background: #fef2f2;
-  border-color: #fecaca;
+  border-left: 3px solid #f87171;
 }
 
 .topVotedItem.blue {
-  background: #eff6ff;
-  border-color: #bfdbfe;
+  border-left: 3px solid #60a5fa;
 }
 
 .topVotedItem.yellow {
-  background: #fefce8;
-  border-color: #fef08a;
+  border-left: 3px solid #facc15;
 }
 
 .topVotedRank {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  color: #111;
+  color: #e5e5e5;
 }
 
 .topVotedContent {
@@ -164,13 +170,15 @@
   font-size: 0.875rem;
   color: #111;
   margin: 0 0 0.5rem 0;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .topVotedMeta {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
   font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .topVotedCategory {
@@ -182,7 +190,7 @@
 }
 
 .topVotedDots {
-  text-align: center;
+  text-align: right;
 }
 
 .dotCount {
@@ -193,9 +201,10 @@
 }
 
 .dotLabel {
-  font-size: 0.65rem;
-  color: #666;
+  font-size: 0.6rem;
+  color: #999;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* Controls */
@@ -206,26 +215,38 @@
   align-items: center;
   margin-bottom: 2rem;
   padding: 1rem;
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid #e5e5e5;
+  background: #fafafa;
 }
 
 .viewToggle {
   display: flex;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  overflow: hidden;
+  gap: 0;
 }
 
 .viewBtn {
-  padding: 0.5rem 1rem;
-  border: none;
+  padding: 0.625rem 1.25rem;
+  border: 1px solid #e5e5e5;
   background: white;
   color: #666;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.15s;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.viewBtn:first-child {
+  border-radius: 2px 0 0 2px;
+}
+
+.viewBtn:last-child {
+  border-radius: 0 2px 2px 0;
+}
+
+.viewBtn:not(:last-child) {
+  border-right: none;
 }
 
 .viewBtn:hover {
@@ -235,12 +256,13 @@
 .viewBtn.active {
   background: #111;
   color: white;
+  border-color: #111;
 }
 
 .searchInput {
-  padding: 0.5rem 1rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  padding: 0.625rem 1rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 2px;
   font-size: 0.875rem;
   min-width: 200px;
   outline: none;
@@ -251,10 +273,10 @@
 }
 
 .sortSelect {
-  padding: 0.5rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  font-size: 0.875rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 2px;
+  font-size: 0.8rem;
   background: white;
   cursor: pointer;
   outline: none;
@@ -272,11 +294,11 @@
 
 .filterBtn {
   padding: 0.5rem 1rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid #e5e5e5;
+  border-radius: 2px;
   background: white;
   color: #666;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -293,12 +315,12 @@
 }
 
 .undoBtn {
-  padding: 0.5rem 1rem;
+  padding: 0.625rem 1rem;
   background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid #e5e5e5;
+  border-radius: 2px;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: #666;
 }
 
@@ -313,14 +335,16 @@
 }
 
 .addNoteBtn {
-  padding: 0.5rem 1rem;
+  padding: 0.625rem 1.25rem;
   background: #111;
   color: white;
   border: none;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  border-radius: 2px;
+  font-size: 0.8rem;
+  font-weight: 600;
   cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .addNoteBtn:hover {
@@ -329,11 +353,10 @@
 
 /* Board */
 .board {
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid #e5e5e5;
   padding: 1rem;
   overflow-x: auto;
+  background: white;
 }
 
 .fadeIn {
@@ -359,13 +382,14 @@
 }
 
 .timeframeHeader {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: #666;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.5rem;
+  letter-spacing: 0.1em;
+  padding: 0.75rem;
   text-align: center;
+  background: #fafafa;
 }
 
 .boardRow {
@@ -377,11 +401,10 @@
 
 .categoryBadge {
   padding: 0.375rem 0.75rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
 }
 
 .categoryBadge.pink {
@@ -405,7 +428,7 @@
   border: none;
   background: none;
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #999;
 }
 
@@ -417,16 +440,14 @@
   padding: 1rem;
   text-align: center;
   color: #999;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   background: #fafafa;
-  border-radius: 4px;
 }
 
 .boardCell {
   min-height: 120px;
   padding: 0.5rem;
   background: #fafafa;
-  border-radius: 4px;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -434,38 +455,35 @@
 
 /* Cards */
 .card {
-  padding: 0.75rem;
-  border-radius: 4px;
+  padding: 0.875rem;
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s;
-  border: 1px solid transparent;
+  border-left: 3px solid transparent;
+  background: white;
 }
 
 .card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .card.pink {
-  background: #fef2f2;
-  border-color: #fecaca;
+  border-left-color: #f87171;
 }
 
 .card.blue {
-  background: #eff6ff;
-  border-color: #bfdbfe;
+  border-left-color: #60a5fa;
 }
 
 .card.yellow {
-  background: #fefce8;
-  border-color: #fef08a;
+  border-left-color: #facc15;
 }
 
 .cardText {
   font-size: 0.8rem;
   color: #111;
   margin: 0 0 0.5rem 0;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .cardFooter {
@@ -483,9 +501,8 @@
 .voteSmallBtn {
   width: 22px;
   height: 22px;
-  border: 1px solid #ddd;
+  border: 1px solid #e5e5e5;
   background: white;
-  border-radius: 4px;
   cursor: pointer;
   font-size: 0.875rem;
   display: flex;
@@ -514,11 +531,12 @@
 }
 
 .tag {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   padding: 0.125rem 0.375rem;
-  background: rgba(0,0,0,0.05);
-  border-radius: 2px;
+  background: #f5f5f5;
   color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .authorBadge {
@@ -530,20 +548,18 @@
 /* Grid View */
 .gridView {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1rem;
   padding: 1rem;
+  border: 1px solid #e5e5e5;
   background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
 }
 
 /* Flow View */
 .flowView {
   height: 600px;
+  border: 1px solid #e5e5e5;
   background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
 }
 
 .fullscreenFlow {
@@ -557,14 +573,15 @@
   position: absolute;
   top: 1rem;
   right: 1rem;
-  padding: 0.5rem 1rem;
+  padding: 0.625rem 1rem;
   background: #111;
   color: white;
   border: none;
-  border-radius: 4px;
   cursor: pointer;
   z-index: 1001;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .exitFullscreenBtn:hover {
@@ -575,7 +592,7 @@
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.6);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -585,17 +602,16 @@
 
 .modalContent {
   background: white;
-  border-radius: 4px;
   padding: 2rem;
   width: 100%;
-  max-width: 500px;
+  max-width: 560px;
   max-height: 90vh;
   overflow-y: auto;
 }
 
 .modalTitle {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 700;
   color: #111;
   margin: 0 0 1.5rem 0;
 }
@@ -604,21 +620,21 @@
   font-size: 0.75rem;
   color: #666;
   margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e5e5;
 }
 
 .formGroup {
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .formGroup label {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: #666;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
   margin-bottom: 0.5rem;
 }
 
@@ -627,8 +643,7 @@
 .formGroup select {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid #e5e5e5;
   font-size: 0.875rem;
   outline: none;
 }
@@ -649,16 +664,15 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1rem 0;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid #e5e5e5;
 }
 
 .voteBtn {
   padding: 0.5rem 1rem;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #e5e5e5;
   background: white;
-  border-radius: 4px;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
 }
 
 .voteBtn:hover {
@@ -670,7 +684,7 @@
   gap: 0.75rem;
   margin-top: 1.5rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid #e5e5e5;
 }
 
 .saveBtn {
@@ -678,10 +692,11 @@
   background: #111;
   color: white;
   border: none;
-  border-radius: 4px;
   cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .saveBtn:hover {
@@ -691,10 +706,9 @@
 .cancelBtn {
   padding: 0.75rem 1.5rem;
   background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid #e5e5e5;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
 }
 
 .cancelBtn:hover {
@@ -706,9 +720,8 @@
   background: white;
   border: 1px solid #ef4444;
   color: #ef4444;
-  border-radius: 4px;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   margin-left: auto;
 }
 
@@ -716,18 +729,49 @@
   background: #fef2f2;
 }
 
+/* Modal Tabs */
+.modalTabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.modalTab {
+  padding: 0.75rem 1.25rem;
+  background: none;
+  border: none;
+  font-size: 0.8rem;
+  color: #666;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.modalTab:hover {
+  color: #111;
+}
+
+.modalTab.activeTab {
+  color: #111;
+  font-weight: 600;
+  border-bottom-color: #111;
+}
+
 /* Comments */
 .commentsSection {
   margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e0e0e0;
 }
 
 .commentsTitle {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: #111;
   margin: 0 0 0.75rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .commentsList {
@@ -744,7 +788,6 @@
 .comment {
   padding: 0.75rem;
   background: #fafafa;
-  border-radius: 4px;
   margin-bottom: 0.5rem;
 }
 
@@ -783,7 +826,7 @@
   font-size: 0.8rem;
   color: #333;
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .addComment {
@@ -793,8 +836,7 @@
 .commentInput {
   width: 100%;
   padding: 0.5rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid #e5e5e5;
   font-size: 0.8rem;
   min-height: 60px;
   resize: vertical;
@@ -811,9 +853,10 @@
   background: #111;
   color: white;
   border: none;
-  border-radius: 4px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .addCommentBtn:hover {
@@ -825,71 +868,176 @@
   cursor: not-allowed;
 }
 
-/* History */
-.historySection {
+/* Version History */
+.versionHistory {
   margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e0e0e0;
 }
 
-.historyTitle {
-  font-size: 0.875rem;
+.versionHistoryTitle {
+  font-size: 0.8rem;
   font-weight: 600;
   color: #111;
-  margin: 0 0 0.5rem 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  margin: 0 0 1rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.historyList {
-  max-height: 150px;
-  overflow-y: auto;
-}
-
-.historyItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem;
-  background: #fafafa;
-  border-radius: 4px;
-  margin-bottom: 0.25rem;
-  font-size: 0.75rem;
-}
-
-.historyText {
+.noVersions {
   font-size: 0.8rem;
-  color: #111;
-  margin-bottom: 0.125rem;
-}
-
-.historyMeta {
-  font-size: 0.7rem;
   color: #999;
+  margin: 0;
 }
 
-.restoreBtn {
+.versionList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+
+.versionItem {
+  border: 1px solid #e5e5e5;
+  overflow: hidden;
+}
+
+.versionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: #fafafa;
+  cursor: pointer;
+}
+
+.versionHeader:hover {
+  background: #f0f0f0;
+}
+
+.versionMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.versionAuthor {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #111;
+}
+
+.versionDate {
+  font-size: 0.7rem;
+  color: #666;
+}
+
+.versionActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.versionExpand {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: #666;
+}
+
+.versionDetails {
+  padding: 0.75rem;
+  border-top: 1px solid #e5e5e5;
+  background: white;
+}
+
+.versionDiff {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  padding: 0.75rem;
+  background: #fafafa;
+  margin-bottom: 0.75rem;
+  word-wrap: break-word;
+}
+
+.diffSame {
+  color: #111;
+}
+
+.diffAdded {
+  background: #d1fae5;
+  color: #065f46;
+  padding: 0.125rem 0;
+}
+
+.diffRemoved {
+  background: #fee2e2;
+  color: #991b1b;
+  text-decoration: line-through;
+  padding: 0.125rem 0;
+}
+
+.versionChanges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.versionChange {
+  font-size: 0.7rem;
   padding: 0.25rem 0.5rem;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.versionRestoreBtn {
+  padding: 0.5rem 1rem;
   background: #111;
   color: white;
   border: none;
-  border-radius: 4px;
   cursor: pointer;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
+  width: 100%;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.restoreBtn:hover {
+.versionRestoreBtn:hover {
   background: #333;
+}
+
+.versionCurrent {
+  padding: 0.75rem;
+  background: #f0fdf4;
+  border-left: 3px solid #22c55e;
+}
+
+.versionCurrentLabel {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #166534;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.25rem;
+}
+
+.versionCurrentText {
+  font-size: 0.8rem;
+  color: #111;
+  line-height: 1.5;
 }
 
 /* Board Selector */
 .boardSelector {
+  border: 1px solid #e5e5e5;
+  padding: 1.25rem;
+  margin-bottom: 2rem;
   background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
 }
 
 .boardSelectorHeader {
@@ -901,20 +1049,23 @@
 
 .boardSelectorHeader h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: #111;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 .newBoardBtn {
-  padding: 0.5rem 1rem;
+  padding: 0.625rem 1.25rem;
   background: #111;
   color: white;
   border: none;
-  border-radius: 4px;
   cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .newBoardBtn:hover {
@@ -922,14 +1073,15 @@
 }
 
 .shareBtn {
-  padding: 0.5rem 1rem;
+  padding: 0.625rem 1.25rem;
   background: white;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #e5e5e5;
   color: #111;
-  border-radius: 4px;
   cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .shareBtn:hover {
@@ -938,7 +1090,7 @@
 
 .boardList {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
   overflow-x: auto;
   padding-bottom: 0.5rem;
 }
@@ -951,11 +1103,10 @@
 
 .boardItem {
   flex: 0 0 auto;
-  min-width: 200px;
-  padding: 0.75rem;
+  min-width: 220px;
+  padding: 1rem;
   background: #fafafa;
-  border-radius: 4px;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -998,7 +1149,6 @@
   height: 28px;
   border: none;
   background: transparent;
-  border-radius: 4px;
   cursor: pointer;
   font-size: 0.875rem;
   display: flex;
@@ -1008,17 +1158,16 @@
 }
 
 .boardActionBtn:hover {
-  background: #e0e0e0;
+  background: #e5e5e5;
   color: #111;
 }
 
 /* New Board Modal */
 .newBoardModal {
   background: white;
-  border-radius: 4px;
   padding: 2rem;
   width: 100%;
-  max-width: 500px;
+  max-width: 560px;
   max-height: 90vh;
   overflow-y: auto;
 }
@@ -1026,7 +1175,7 @@
 .newBoardModal h2 {
   margin: 0 0 1.5rem 0;
   color: #111;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
 }
 
 .createOptions {
@@ -1039,12 +1188,12 @@
   flex: 1;
   padding: 1.5rem;
   background: #fafafa;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid #e5e5e5;
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 500;
   transition: all 0.15s;
+  text-align: center;
 }
 
 .createOptionBtn:hover {
@@ -1059,10 +1208,9 @@
 }
 
 .templateCard {
-  padding: 1rem;
+  padding: 1.25rem;
   background: #fafafa;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid #e5e5e5;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1087,23 +1235,25 @@
 .templatePreview {
   font-size: 0.7rem;
   color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* Quick Add Note */
 .quickAdd {
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 .quickAddTrigger {
   width: 100%;
-  padding: 1rem;
+  padding: 1.25rem;
   background: white;
   border: 1px dashed #ccc;
-  border-radius: 4px;
   cursor: pointer;
   font-size: 0.875rem;
   color: #666;
   transition: all 0.15s;
+  text-align: center;
 }
 
 .quickAddTrigger:hover {
@@ -1113,17 +1263,15 @@
 
 .quickAddForm {
   background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  padding: 1rem;
+  border: 1px solid #e5e5e5;
+  padding: 1.25rem;
 }
 
 .quickAddInput {
   width: 100%;
   min-height: 80px;
   padding: 0.75rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid #e5e5e5;
   font-size: 0.875rem;
   resize: vertical;
   margin-bottom: 0.75rem;
@@ -1142,8 +1290,7 @@
 
 .quickAddSelect {
   padding: 0.5rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid #e5e5e5;
   font-size: 0.8rem;
   background: white;
 }
@@ -1153,10 +1300,11 @@
   background: #111;
   color: white;
   border: none;
-  border-radius: 4px;
   cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: 500;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .quickAddSubmit:hover {
@@ -1171,8 +1319,7 @@
 .quickAddCancel {
   padding: 0.5rem 1rem;
   background: none;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid #e5e5e5;
   cursor: pointer;
   font-size: 0.8rem;
   color: #666;
@@ -1192,8 +1339,7 @@
 .shareUrlInput {
   flex: 1;
   padding: 0.75rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid #e5e5e5;
   font-size: 0.875rem;
   background: #fafafa;
 }
@@ -1203,9 +1349,11 @@
   background: #111;
   color: white;
   border: none;
-  border-radius: 4px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .copyBtn:hover {
@@ -1222,16 +1370,17 @@
 .presenceContainer {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   padding: 0.5rem 1rem;
   background: #fafafa;
-  border-radius: 4px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #e5e5e5;
 }
 
 .presenceLabel {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .presenceAvatars {
@@ -1246,7 +1395,7 @@
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   border: 2px solid white;
   margin-left: -8px;
@@ -1273,25 +1422,26 @@
 
 /* Activity Feed */
 .activityFeed {
+  border: 1px solid #e5e5e5;
+  padding: 1.25rem;
+  margin-bottom: 2rem;
   background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
 }
 
 .activityHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .activityHeader h3 {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: #111;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 .activityToggle {
@@ -1319,8 +1469,7 @@
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
-  padding: 0.5rem;
-  border-radius: 4px;
+  padding: 0.75rem;
   background: #fafafa;
 }
 
@@ -1332,7 +1481,7 @@
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   flex-shrink: 0;
 }
@@ -1381,7 +1530,7 @@
 .namePromptOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.6);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1390,8 +1539,7 @@
 
 .namePromptModal {
   background: white;
-  padding: 2rem;
-  border-radius: 4px;
+  padding: 2.5rem;
   text-align: center;
   max-width: 400px;
   width: 90%;
@@ -1400,12 +1548,12 @@
 .namePromptModal h2 {
   margin: 0 0 0.5rem 0;
   color: #111;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
 }
 
 .namePromptModal p {
   color: #666;
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 2rem 0;
   font-size: 0.875rem;
 }
 
@@ -1413,19 +1561,17 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  margin: 0 auto 1.5rem;
-  border: 3px solid white;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  margin: 0 auto 2rem;
 }
 
 .namePromptModal input {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  padding: 0.875rem;
+  border: 1px solid #e5e5e5;
   font-size: 1rem;
   margin-bottom: 1rem;
   outline: none;
+  text-align: center;
 }
 
 .namePromptModal input:focus {
@@ -1434,14 +1580,15 @@
 
 .namePromptModal button {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.875rem;
   background: #111;
   color: white;
   border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-weight: 500;
+  font-size: 0.875rem;
+  font-weight: 600;
   cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .namePromptModal button:hover {
@@ -1455,6 +1602,10 @@
 
 /* Mobile Responsive */
 @media (max-width: 1024px) {
+  .container {
+    padding: 1.5rem;
+  }
+  
   .controls {
     flex-direction: column;
     align-items: stretch;
@@ -1463,27 +1614,11 @@
   .filterGroup {
     flex-wrap: wrap;
   }
-  
-  .boardHeader {
-    grid-template-columns: 120px repeat(3, 1fr) !important;
-  }
-  
-  .boardRowLabel {
-    min-width: 120px;
-  }
-  
-  .boardRow {
-    grid-template-columns: 120px repeat(3, 1fr) !important;
-  }
 }
 
 @media (max-width: 768px) {
   .container {
     padding: 1rem;
-  }
-  
-  .header {
-    text-align: left;
   }
   
   .headerRow {
@@ -1492,31 +1627,20 @@
   }
   
   .title {
-    font-size: 1.5rem;
-  }
-  
-  .subtitle {
-    font-size: 0.8rem;
+    font-size: 1.75rem;
   }
   
   .stats {
-    flex-direction: row;
-    gap: 0.5rem;
-    justify-content: flex-start;
-    overflow-x: auto;
+    flex-direction: column;
   }
   
   .stat {
-    padding: 0.75rem 1rem;
-    min-width: 70px;
+    border-right: none;
+    border-bottom: 1px solid #e5e5e5;
   }
   
-  .statNumber {
-    font-size: 1.5rem;
-  }
-  
-  .topVoted {
-    padding: 1rem;
+  .stat:last-child {
+    border-bottom: none;
   }
   
   .topVotedList {
@@ -1528,14 +1652,12 @@
     flex: 1;
   }
   
-  .controls {
-    padding: 0.75rem;
-    gap: 0.5rem;
-  }
-  
   .viewToggle {
     width: 100%;
-    justify-content: center;
+  }
+  
+  .viewBtn {
+    flex: 1;
   }
   
   .searchInput {
@@ -1543,34 +1665,8 @@
     min-width: unset;
   }
   
-  .sortSelect {
-    flex: 1;
-    min-width: 0;
-  }
-  
-  .filterGroup {
-    width: 100%;
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
-  }
-  
-  .filterBtn {
-    white-space: nowrap;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.75rem;
-  }
-  
-  .addNoteBtn {
-    width: 100%;
-  }
-  
-  .undoBtn {
-    flex: 1;
-  }
-  
   .board {
     padding: 0.75rem;
-    overflow-x: auto;
   }
   
   .boardHeader {
@@ -1581,7 +1677,6 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    padding: 0.5rem 0;
     grid-template-columns: unset !important;
   }
   
@@ -1590,31 +1685,12 @@
     margin-bottom: 0.5rem;
   }
   
-  .boardCell {
-    min-height: 80px;
-  }
-  
-  .collapsedRow {
-    grid-column: unset;
-  }
-  
-  .card {
-    width: 100%;
-  }
-  
   .gridView {
     grid-template-columns: 1fr;
-    padding: 0.75rem;
   }
   
   .modalContent {
     padding: 1.5rem;
-    margin: 1rem;
-    max-height: calc(100vh - 2rem);
-  }
-  
-  .modalTitle {
-    font-size: 1.125rem;
   }
   
   .modalActions {
@@ -1629,19 +1705,10 @@
     margin-left: 0;
   }
   
-  .boardSelector {
-    padding: 0.75rem;
-  }
-  
   .boardSelectorHeader {
     flex-direction: column;
     gap: 0.75rem;
     align-items: stretch;
-  }
-  
-  .boardSelectorHeader > div {
-    display: flex;
-    gap: 0.5rem;
   }
   
   .boardList {
@@ -1651,11 +1718,6 @@
   .boardItem {
     width: 100%;
     min-width: unset;
-  }
-  
-  .newBoardModal {
-    margin: 1rem;
-    padding: 1.5rem;
   }
   
   .createOptions {
@@ -1670,152 +1732,26 @@
     flex-wrap: wrap;
   }
   
-  .quickAddSelect {
-    flex: 1;
-    min-width: 100px;
-  }
-  
-  .quickAddSubmit,
-  .quickAddCancel {
-    flex: 1;
-  }
-  
   .presenceContainer {
-    margin-left: 0;
     width: 100%;
-    justify-content: flex-start;
-  }
-  
-  .fullscreenFlow {
-    padding: 0.5rem;
-  }
-  
-  .exitFullscreenBtn {
-    top: 0.5rem;
-    right: 0.5rem;
-    padding: 0.375rem 0.75rem;
-    font-size: 0.8rem;
   }
   
   .shareUrlContainer {
     flex-direction: column;
   }
-  
-  .shareUrlInput {
-    width: 100%;
-  }
-  
-  .copyBtn {
-    width: 100%;
-  }
-  
-  .userBadge {
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
-  }
-  
-  .commentsSection {
-    margin-top: 1rem;
-    padding-top: 1rem;
-  }
-  
-  .addComment {
-    gap: 0.5rem;
-  }
-  
-  .addCommentBtn {
-    width: 100%;
-  }
-  
-  .historyItem {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-  
-  .restoreBtn {
-    width: 100%;
-  }
-  
-  .activityFeed {
-    padding: 0.75rem;
-  }
-  
-  .activityItem {
-    padding: 0.375rem;
-  }
-  
-  .activityAvatar {
-    width: 24px;
-    height: 24px;
-    font-size: 0.65rem;
-  }
-  
-  .activityUser,
-  .activityAction {
-    font-size: 0.75rem;
-  }
-  
-  .activityNote {
-    font-size: 0.7rem;
-  }
 }
 
 @media (max-width: 480px) {
-  .container {
-    padding: 0.75rem;
-  }
-  
   .title {
-    font-size: 1.25rem;
-  }
-  
-  .stat {
-    padding: 0.5rem 0.75rem;
+    font-size: 1.5rem;
   }
   
   .statNumber {
-    font-size: 1.25rem;
-  }
-  
-  .statLabel {
-    font-size: 0.65rem;
+    font-size: 2rem;
   }
   
   .viewBtn {
     padding: 0.5rem 0.75rem;
-    font-size: 0.75rem;
-  }
-  
-  .topVotedRank {
-    font-size: 1rem;
-  }
-  
-  .topVotedText {
-    font-size: 0.75rem;
-  }
-  
-  .cardText {
-    font-size: 0.75rem;
-  }
-  
-  .voteSmallBtn {
-    width: 20px;
-    height: 20px;
-  }
-  
-  .categoryBadge {
-    font-size: 0.65rem;
-    padding: 0.25rem 0.5rem;
-  }
-  
-  .presenceAvatar {
-    width: 24px;
-    height: 24px;
-    font-size: 0.65rem;
-  }
-  
-  .presenceLabel {
-    font-size: 0.65rem;
+    font-size: 0.7rem;
   }
 }

@@ -443,6 +443,7 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
       )}
 
       <NoteModal
+        boardId={board.id}
         note={selectedNote}
         isOpen={isModalOpen}
         onClose={() => {

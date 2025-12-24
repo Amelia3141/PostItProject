@@ -11,6 +11,7 @@ import { QuickAddNote } from './QuickAddNote';
 import { PresenceAvatars } from './PresenceAvatars';
 import { ActivityFeed } from './ActivityFeed';
 import { ThemeToggle } from './ThemeToggle';
+import { AIAnalysis } from './AIAnalysis';
 import { exportToJSON, exportToCSV, exportToPDF } from '@/lib/export';
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { DraggableNoteCard } from './DraggableNoteCard';
@@ -35,7 +36,6 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
   const { connections, addConnection } = useConnections(board.id);
   const { user } = useUser();
   
-  // Add activation constraint - must drag at least 8px before drag starts
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -49,6 +49,7 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
   const [minVotes, setMinVotes] = useState<number>(0);
   const [collapsedRows, setCollapsedRows] = useState<Set<string>>(new Set());
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showAIAnalysis, setShowAIAnalysis] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     timeframe: 'all',
     category: 'all',
@@ -127,11 +128,6 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
     const noteId = active.id as string;
     const targetId = over.id as string;
     
-    // Parse the target cell ID - format is "category-timeframe"
-    const parts = targetId.split('-');
-    if (parts.length < 2) return;
-    
-    // Find the matching row and column by ID
     const targetRow = board.rows.find(r => targetId.startsWith(r.id + '-'));
     const targetCol = board.columns.find(c => targetId.endsWith('-' + c.id));
     
@@ -367,6 +363,13 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
           </>
         )}
         
+        <button 
+          className={styles.aiBtn} 
+          onClick={() => setShowAIAnalysis(true)}
+        >
+          AI Analysis
+        </button>
+        
         <button className={styles.filterBtn} onClick={() => exportToJSON(notes)}>JSON</button>
         <button className={styles.filterBtn} onClick={() => exportToCSV(notes)}>CSV</button>
         <button className={styles.filterBtn} onClick={() => exportToPDF(notes)}>PDF</button>
@@ -479,6 +482,13 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
         timeframes={board.columns.map(c => ({ id: c.id, label: c.label }))}
         readOnly={readOnly}
         boardId={board.id}
+      />
+
+      <AIAnalysis
+        board={board}
+        notes={notes}
+        isOpen={showAIAnalysis}
+        onClose={() => setShowAIAnalysis(false)}
       />
     </div>
   );

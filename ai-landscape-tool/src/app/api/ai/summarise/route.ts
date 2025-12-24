@@ -1,0 +1,205 @@
+import Anthropic from '@anthropic-ai/sdk';
+import { NextRequest } from 'next/server';
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+export async function POST(req: NextRequest) {
+  try {
+    const { notes, boardName, rows, columns, type = 'summary' } = await req.json();
+
+    if (!notes || notes.length === 0) {
+      return Response.json({ error: 'No notes provided' }, { status: 400 });
+    }
+
+    const notesText = notes
+      .map((n: any) => {
+        const row = rows.find((r: any) => r.id === n.category)?.label || n.category;
+        const col = columns.find((c: any) => c.id === n.timeframe)?.label || n.timeframe;
+        return `[${row} / ${col}] "${n.text}" (${n.votes || 0} votes)`;
+      })
+      .join('\n');
+
+    const structureText = `Rows: ${rows.map((r: any) => r.label).join(', ')}\nColumns: ${columns.map((c: any) => c.label).join(', ')}`;
+
+    let prompt = '';
+
+    switch (type) {
+      case 'summary':
+        prompt = `You are analysing a strategic workshop board called "${boardName}".
+
+Board structure:
+${structureText}
+
+All notes from the workshop:
+${notesText}
+
+Provide a comprehensive analysis with:
+
+1. **Executive Summary** (3-4 sentences capturing the key takeaways)
+
+2. **Key Themes** (identify 4-6 major themes that emerged, with brief explanations)
+
+3. **Top Priorities** (based on vote counts and strategic importance)
+
+4. **Gaps & Missing Perspectives** (what important areas weren't addressed?)
+
+5. **Recommended Next Steps** (3-5 actionable recommendations)
+
+Be concise but insightful. Use British English spelling.`;
+        break;
+
+      case 'sentiment':
+        prompt = `Analyse the sentiment and tone of these workshop notes from "${boardName}":
+
+${notesText}
+
+Provide:
+
+1. **Overall Sentiment**: Is the group generally optimistic, cautious, concerned, or mixed about the topic?
+
+2. **Sentiment by Category**:
+${rows.map((r: any) => `- ${r.label}: [analyse sentiment]`).join('\n')}
+
+3. **Key Concerns**: List specific worries or risks mentioned
+
+4. **Opportunities Identified**: List positive possibilities mentioned
+
+5. **Emotional Undertones**: Any frustrations, excitement, uncertainty detected?
+
+Be specific and quote relevant notes where helpful. Use British English.`;
+        break;
+
+      case 'themes':
+        prompt = `Extract and cluster themes from this workshop board "${boardName}":
+
+${notesText}
+
+Provide:
+
+1. **Primary Themes** (3-5 major themes with the notes that belong to each)
+
+2. **Emerging Patterns** (connections between different areas of the board)
+
+3. **Contradictions or Tensions** (conflicting ideas that emerged)
+
+4. **Consensus Areas** (where there seems to be strong agreement)
+
+5. **Outlier Ideas** (unique perspectives that don't fit the main themes but are worth noting)
+
+Group related notes together and explain the connections. Use British English.`;
+        break;
+
+      case 'stakeholder':
+        prompt = `Generate stakeholder-specific summaries from this workshop board "${boardName}":
+
+Board structure:
+${structureText}
+
+Notes:
+${notesText}
+
+Create tailored summaries for each stakeholder type (adjust based on what's relevant to the board content):
+
+1. **For Government/Policy Makers**:
+   - Key policy implications
+   - Regulatory considerations
+   - Public interest concerns
+
+2. **For Academia/Researchers**:
+   - Research opportunities
+   - Knowledge gaps identified
+   - Collaboration possibilities
+
+3. **For Industry/Business**:
+   - Commercial opportunities
+   - Implementation challenges
+   - Competitive considerations
+
+4. **For Civil Society/Public**:
+   - Societal impacts
+   - Ethical considerations
+   - Public engagement needs
+
+Each summary should be 3-4 sentences, actionable, and relevant to that stakeholder's priorities. Use British English.`;
+        break;
+
+      case 'actions':
+        prompt = `Extract actionable items from this workshop board "${boardName}":
+
+${notesText}
+
+Provide:
+
+1. **Immediate Actions** (can be done within 1 month)
+   - List specific, concrete actions
+   - Suggest who should own each action
+
+2. **Short-term Actions** (1-3 months)
+   - Strategic initiatives to launch
+   - Resources needed
+
+3. **Long-term Actions** (3-12 months)
+   - Major projects or programmes
+   - Dependencies and prerequisites
+
+4. **Quick Wins** (high impact, low effort items)
+
+5. **Parking Lot** (good ideas that need more exploration)
+
+Be specific and actionable. Each item should be clear enough to assign to someone. Use British English.`;
+        break;
+
+      case 'gaps':
+        prompt = `Analyse what's missing from this workshop board "${boardName}":
+
+Board structure:
+${structureText}
+
+Current notes:
+${notesText}
+
+Identify:
+
+1. **Empty or Sparse Areas**: Which cells/categories have few or no notes? What might belong there?
+
+2. **Missing Perspectives**: What viewpoints or stakeholders aren't represented?
+
+3. **Unasked Questions**: What important questions weren't addressed?
+
+4. **Blind Spots**: What assumptions might the group be making? What are they not seeing?
+
+5. **Suggested Additions**: Provide 5-10 specific ideas that could fill the gaps
+
+Be constructive and specific. Use British English.`;
+        break;
+
+      default:
+        return Response.json({ error: 'Invalid analysis type' }, { status: 400 });
+    }
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const content = response.content[0];
+    if (content.type !== 'text') {
+      return Response.json({ error: 'Unexpected response type' }, { status: 500 });
+    }
+
+    return Response.json({
+      analysis: content.text,
+      type,
+      notesAnalysed: notes.length,
+    });
+  } catch (error: any) {
+    console.error('AI analysis error:', error);
+    return Response.json(
+      { error: error.message || 'AI analysis failed' },
+      { status: 500 }
+    );
+  }
+}

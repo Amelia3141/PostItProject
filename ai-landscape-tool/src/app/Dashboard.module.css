@@ -2416,3 +2416,23 @@
     font-size: 0.75rem;
   }
 }
+
+/* AI Analysis Button */
+.aiBtn {
+  padding: 0.625rem 1.25rem;
+  background: var(--accent);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-sm);
+  letter-spacing: -0.01em;
+}
+
+.aiBtn:hover {
+  background: var(--accent-hover);
+  box-shadow: var(--shadow-md);
+}

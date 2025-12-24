@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import ReactFlow, {
   Node,
   Edge,
@@ -14,36 +14,34 @@ import ReactFlow, {
   Position,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Note, Connection, Category, Timeframe } from '@/types';
+import { Note, Connection, BoardColumn, BoardRow } from '@/types';
 
 interface FlowViewProps {
   notes: Note[];
   connections: Connection[];
+  columns: BoardColumn[];
+  rows: BoardRow[];
   onNoteClick: (note: Note) => void;
   onConnect: (sourceId: string, targetId: string) => void;
 }
 
-const categoryColors: Record<Category, string> = {
-  opportunities: '#fff5f5',
-  enablers: '#f0f7ff',
-  actors: '#fffff0',
+const colourToBackground: Record<string, string> = {
+  pink: '#fff5f5',
+  blue: '#f0f7ff',
+  yellow: '#fffff0',
+  green: '#f0fff4',
+  purple: '#faf5ff',
+  orange: '#fffaf0',
 };
 
-const categoryBorders: Record<Category, string> = {
-  opportunities: '#fed7d7',
-  enablers: '#bee3f8',
-  actors: '#faf089',
+const colourToBorder: Record<string, string> = {
+  pink: '#fed7d7',
+  blue: '#bee3f8',
+  yellow: '#faf089',
+  green: '#9ae6b4',
+  purple: '#d6bcfa',
+  orange: '#fbd38d',
 };
-
-const timeframeLabels: Record<Timeframe, string> = {
-  '10months': '10 Months',
-  '3years': '3 Years',
-  '10years': '10 Years',
-  'foundational': 'Foundational',
-};
-
-const timeframeOrder: Timeframe[] = ['10months', '3years', '10years', 'foundational'];
-const categoryOrder: Category[] = ['opportunities', 'enablers', 'actors'];
 
 function NoteNode({ data }: { data: { label: string; note: Note; background: string; border: string } }) {
   return (
@@ -65,22 +63,23 @@ function NoteNode({ data }: { data: { label: string; note: Note; background: str
 
 const nodeTypes = { noteNode: NoteNode };
 
-export function FlowView({ notes, connections, onNoteClick, onConnect }: FlowViewProps) {
+export function FlowView({ notes, connections, columns, rows, onNoteClick, onConnect }: FlowViewProps) {
   const buildNodes = useCallback((): Node[] => {
     const nodes: Node[] = [];
     const cellCounts: Record<string, number> = {};
-    
+
     const colWidth = 320;
     const rowHeight = 280;
     const nodeWidth = 150;
     const nodeHeight = 70;
     const padding = 15;
-    
-    timeframeOrder.forEach((tf, colIndex) => {
+
+    // Column headers (dynamic from board.columns)
+    columns.forEach((col, colIndex) => {
       nodes.push({
-        id: `header-${tf}`,
+        id: `header-${col.id}`,
         position: { x: 180 + colIndex * colWidth + colWidth/2 - 60, y: 10 },
-        data: { label: timeframeLabels[tf] },
+        data: { label: col.label },
         style: {
           background: '#1a1a2e',
           color: 'white',
@@ -89,66 +88,74 @@ export function FlowView({ notes, connections, onNoteClick, onConnect }: FlowVie
           padding: '8px 16px',
           fontSize: '12px',
           fontWeight: '600',
-          width: 100,
-          textAlign: 'center',
+          width: 120,
+          textAlign: 'center' as const,
         },
         draggable: false,
         selectable: false,
       });
     });
 
-    categoryOrder.forEach((cat, rowIndex) => {
+    // Row labels (dynamic from board.rows)
+    rows.forEach((row, rowIndex) => {
+      const bgColor = colourToBackground[row.colour] || '#f5f5f5';
+      const borderColor = colourToBorder[row.colour] || '#e0e0e0';
       nodes.push({
-        id: `label-${cat}`,
+        id: `label-${row.id}`,
         position: { x: 20, y: 70 + rowIndex * rowHeight + 40 },
-        data: { label: cat.charAt(0).toUpperCase() + cat.slice(1) },
+        data: { label: row.label },
         style: {
-          background: categoryColors[cat],
-          border: `2px solid ${categoryBorders[cat]}`,
+          background: bgColor,
+          border: `2px solid ${borderColor}`,
           borderRadius: '6px',
           padding: '8px 12px',
           fontSize: '11px',
           fontWeight: '600',
-          width: 100,
-          textAlign: 'center',
+          width: 120,
+          textAlign: 'center' as const,
         },
         draggable: false,
         selectable: false,
       });
     });
 
+    // Note nodes
     notes.forEach((note) => {
-      const colIndex = timeframeOrder.indexOf(note.timeframe);
-      const rowIndex = categoryOrder.indexOf(note.category);
-      
+      const colIndex = columns.findIndex(c => c.id === note.timeframe);
+      const rowIndex = rows.findIndex(r => r.id === note.category);
+
       if (colIndex === -1 || rowIndex === -1) return;
-      
+
+      const row = rows[rowIndex];
       const cellKey = `${note.category}-${note.timeframe}`;
       cellCounts[cellKey] = (cellCounts[cellKey] || 0);
       const offset = cellCounts[cellKey];
       cellCounts[cellKey]++;
-      
+
       const col = offset % 2;
-      const row = Math.floor(offset / 2);
-      
+      const rowOffset = Math.floor(offset / 2);
+
       const x = 180 + colIndex * colWidth + col * (nodeWidth + padding);
-      const y = 70 + rowIndex * rowHeight + row * (nodeHeight + padding);
+      const y = 70 + rowIndex * rowHeight + rowOffset * (nodeHeight + padding);
+
+      const bgColor = colourToBackground[row.colour] || '#f5f5f5';
+      const borderColor = colourToBorder[row.colour] || '#e0e0e0';
 
       nodes.push({
         id: note.id,
         type: 'noteNode',
         position: { x, y },
-        data: { 
+        data: {
           label: note.text.length > 35 ? note.text.substring(0, 35) + '...' : note.text,
           note,
-          background: categoryColors[note.category],
-          border: categoryBorders[note.category],
+          background: bgColor,
+          border: borderColor,
         },
       });
     });
 
     return nodes;
-  }, [notes]);
+  }, [notes, columns, rows]);
 
   const buildEdges = useCallback((): Edge[] => {
     return connections.map((conn) => ({

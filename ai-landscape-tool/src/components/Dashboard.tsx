@@ -188,6 +188,8 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
     <FlowView
       notes={processedNotes}
       connections={connections}
+      columns={board.columns}
+      rows={board.rows}
       onNoteClick={handleNoteClick}
       onConnect={handleConnect}
     />
@@ -196,22 +198,20 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <div className={styles.headerRow}>
-          <div>
-            <h1 className={styles.title}>{board.name}</h1>
-            {board.description && (
-              <p className={styles.subtitle}>{board.description}</p>
-            )}
-          </div>
-          <div className={styles.headerActions}>
-            <PresenceAvatars boardId={board.id} />
-            {user && (
-              <div className={styles.userBadge} style={{ backgroundColor: user.colour }}>
-                {user.name}
-              </div>
-            )}
-            <ThemeToggle />
-          </div>
+        <div className={styles.headerTopBar}>
+          <PresenceAvatars boardId={board.id} />
+          {user && (
+            <div className={styles.userBadge} style={{ backgroundColor: user.colour }}>
+              {user.name}
+            </div>
+          )}
+          <ThemeToggle />
+        </div>
+        <div className={styles.headerTitle}>
+          <h1 className={styles.title}>{board.name}</h1>
+          {board.description && (
+            <p className={styles.subtitle}>{board.description}</p>
+          )}
         </div>
         {readOnly && (
           <div className={styles.readOnlyBanner}>
@@ -422,6 +422,7 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
                         onClick={() => handleNoteClick(note)}
                         onVote={handleVote}
                         rotation={getRotation(note.id)}
+                        rowColour={row.colour}
                       />
                     ))}
                   </DroppableCell>

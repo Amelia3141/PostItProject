@@ -2,7 +2,7 @@
 
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Note, Category } from '@/types';
+import { Note } from '@/types';
 import styles from '@/app/Dashboard.module.css';
 
 interface DraggableNoteCardProps {
@@ -10,33 +10,27 @@ interface DraggableNoteCardProps {
   onClick?: () => void;
   onVote?: (id: string, increment: number) => void;
   rotation?: number;
+  rowColour?: string;
 }
-
-const categoryColours: Record<Category, string> = {
-  opportunities: 'pink',
-  enablers: 'blue',
-  actors: 'yellow',
-};
 
 export function DraggableNoteCard({
   note,
   onClick,
   onVote,
   rotation = 0,
+  rowColour = 'pink',
 }: DraggableNoteCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: note.id,
     data: { note },
   });
 
-  const colourClass = categoryColours[note.category] || 'pink';
   const votes = note.votes || 0;
   const tags = note.tags || [];
 
   const style = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.5 : 1,
-    cursor: 'grab',
   };
 
   const handleVote = (e: React.MouseEvent, increment: number) => {
@@ -46,15 +40,26 @@ export function DraggableNoteCard({
     }
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (onClick) {
+      onClick();
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      className={`${styles.card} ${styles[colourClass]}`}
+      className={`${styles.card} ${styles[rowColour]}`}
       style={style}
-      onClick={onClick}
+      onClick={handleCardClick}
     >
+      <div
+        className={styles.dragHandle}
+        {...listeners}
+        {...attributes}
+      >
+        ⋮⋮
+      </div>
       <p className={styles.cardText}>{note.text}</p>
       <div className={styles.cardFooter}>
         <div className={styles.voteButtons}>

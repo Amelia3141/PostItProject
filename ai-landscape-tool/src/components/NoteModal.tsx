@@ -20,20 +20,33 @@ interface NoteModalProps {
   timeframes: { id: string; label: string }[];
   readOnly?: boolean;
   boardId?: string;
+  authors?: { id: string; name: string }[];
 }
 
-export function NoteModal({ 
-  note, 
-  isOpen, 
-  onClose, 
-  onSave, 
-  onDelete, 
-  onVote, 
+// Helper to render text with @mentions highlighted
+function renderWithMentions(text: string) {
+  const parts = text.split(/(@\w+)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('@')) {
+      return <span key={i} className={styles.mention}>{part}</span>;
+    }
+    return part;
+  });
+}
+
+export function NoteModal({
+  note,
+  isOpen,
+  onClose,
+  onSave,
+  onDelete,
+  onVote,
   onRestoreVersion,
   categories,
   timeframes,
   readOnly = false,
   boardId,
+  authors = [],
 }: NoteModalProps) {
   const { user } = useUser();
   const [text, setText] = useState('');
@@ -44,6 +57,8 @@ export function NoteModal({
   const [newComment, setNewComment] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
   const [activeTab, setActiveTab] = useState<'edit' | 'history' | 'comments'>('edit');
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionFilter, setMentionFilter] = useState('');
 
   useEffect(() => {
     if (note) {
@@ -254,7 +269,7 @@ export function NoteModal({
                       <span className={styles.commentAuthor}>{comment.author}</span>
                       <span className={styles.commentDate}>{formatDate(comment.createdAt)}</span>
                       {!readOnly && (
-                        <button 
+                        <button
                           className={styles.commentDelete}
                           onClick={() => handleDeleteComment(comment.id)}
                         >
@@ -262,7 +277,7 @@ export function NoteModal({
                         </button>
                       )}
                     </div>
-                    <p className={styles.commentText}>{comment.text}</p>
+                    <p className={styles.commentText}>{renderWithMentions(comment.text)}</p>
                   </div>
                 ))
               )}
@@ -270,13 +285,55 @@ export function NoteModal({
 
             {!readOnly && (
               <div className={styles.addComment}>
-                <textarea
-                  placeholder="Add a comment..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  className={styles.commentInput}
-                />
-                <button 
+                <div className={styles.mentionWrapper}>
+                  <textarea
+                    placeholder="Add a comment... (type @ to mention)"
+                    value={newComment}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewComment(val);
+                      // Check for @ trigger
+                      const lastAt = val.lastIndexOf('@');
+                      if (lastAt !== -1 && lastAt === val.length - 1) {
+                        setShowMentions(true);
+                        setMentionFilter('');
+                      } else if (lastAt !== -1) {
+                        const afterAt = val.slice(lastAt + 1);
+                        if (!afterAt.includes(' ')) {
+                          setShowMentions(true);
+                          setMentionFilter(afterAt.toLowerCase());
+                        } else {
+                          setShowMentions(false);
+                        }
+                      } else {
+                        setShowMentions(false);
+                      }
+                    }}
+                    className={styles.commentInput}
+                  />
+                  {showMentions && authors.length > 0 && (
+                    <div className={styles.mentionPicker}>
+                      {authors
+                        .filter(a => a.name.toLowerCase().includes(mentionFilter))
+                        .slice(0, 5)
+                        .map(author => (
+                          <button
+                            key={author.id}
+                            className={styles.mentionOption}
+                            onClick={() => {
+                              const lastAt = newComment.lastIndexOf('@');
+                              const before = newComment.slice(0, lastAt);
+                              setNewComment(before + '@' + author.name.replace(/\s+/g, '') + ' ');
+                              setShowMentions(false);
+                            }}
+                          >
+                            @{author.name}
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
+                <button
                   className={styles.addCommentBtn}
                   onClick={handleAddComment}
                   disabled={!newComment.trim()}

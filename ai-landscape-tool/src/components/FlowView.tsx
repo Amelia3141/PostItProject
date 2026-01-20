@@ -23,6 +23,7 @@ interface FlowViewProps {
   rows: BoardRow[];
   onNoteClick: (note: Note) => void;
   onConnect: (sourceId: string, targetId: string) => void;
+  onDeleteConnection?: (connectionId: string) => void;
 }
 
 const colourToBackground: Record<string, string> = {
@@ -63,7 +64,7 @@ function NoteNode({ data }: { data: { label: string; note: Note; background: str
 
 const nodeTypes = { noteNode: NoteNode };
 
-export function FlowView({ notes, connections, columns, rows, onNoteClick, onConnect }: FlowViewProps) {
+export function FlowView({ notes, connections, columns, rows, onNoteClick, onConnect, onDeleteConnection }: FlowViewProps) {
   const buildNodes = useCallback((): Node[] => {
     const nodes: Node[] = [];
     const cellCounts: Record<string, number> = {};
@@ -192,6 +193,12 @@ export function FlowView({ notes, connections, columns, rows, onNoteClick, onCon
     }
   }, [onNoteClick]);
 
+  const onEdgeClick = useCallback((_: any, edge: Edge) => {
+    if (onDeleteConnection && window.confirm('Delete this connection?')) {
+      onDeleteConnection(edge.id);
+    }
+  }, [onDeleteConnection]);
+
   return (
     <div style={{ width: '100%', height: '700px', background: 'white', borderRadius: '12px', border: '1px solid #e9ecef' }}>
       <ReactFlow
@@ -201,6 +208,7 @@ export function FlowView({ notes, connections, columns, rows, onNoteClick, onCon
         onEdgesChange={onEdgesChange}
         onConnect={handleConnect}
         onNodeClick={onNodeClick}
+        onEdgeClick={onEdgeClick}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.1 }}

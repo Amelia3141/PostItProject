@@ -41,28 +41,148 @@ export function exportToCSV(notes: Note[], filename = 'ai-landscape-export') {
   downloadBlob(blob, `${filename}.csv`);
 }
 
-export async function exportToPDF(notes: Note[], filename = 'ai-landscape-export') {
+export async function exportToPDF(notes: Note[], filename = 'ai-landscape-export', board?: Board) {
   const { jsPDF } = await import('jspdf');
   const { default: autoTable } = await import('jspdf-autotable');
-  const doc = new jsPDF();
-  doc.setFontSize(20);
-  doc.text('AI Landscape - Workshop Export', 14, 22);
-  doc.setFontSize(10);
-  doc.text(`Exported: ${new Date().toLocaleDateString()}`, 14, 30);
-  doc.text(`Total Ideas: ${notes.length}`, 14, 36);
-  const tableData = notes.map(note => [
-    note.text.substring(0, 60) + (note.text.length > 60 ? '...' : ''),
-    note.category,
-    note.timeframe,
-    note.votes || 0
-  ]);
+  const doc = new jsPDF('landscape');
+
+  const boardName = board?.name || 'AI Landscape';
+
+  // Title page
+  doc.setFontSize(28);
+  doc.setTextColor(26, 26, 46);
+  doc.text(boardName, 148, 60, { align: 'center' });
+
+  if (board?.description) {
+    doc.setFontSize(14);
+    doc.setTextColor(100, 100, 100);
+    doc.text(board.description, 148, 75, { align: 'center' });
+  }
+
+  doc.setFontSize(12);
+  doc.setTextColor(150, 150, 150);
+  doc.text(`${notes.length} ideas • Exported ${new Date().toLocaleDateString()}`, 148, 100, { align: 'center' });
+
+  // Stats summary
+  const totalVotes = notes.reduce((sum, n) => sum + (n.votes || 0), 0);
+  const contributors = new Set(notes.map(n => n.createdById).filter(Boolean)).size;
+
+  doc.setFontSize(11);
+  doc.setTextColor(80, 80, 80);
+  doc.text(`Total Votes: ${totalVotes} • Contributors: ${contributors}`, 148, 115, { align: 'center' });
+
+  // Page 2: Board Matrix View
+  if (board) {
+    doc.addPage('landscape');
+    doc.setFontSize(18);
+    doc.setTextColor(26, 26, 46);
+    doc.text('Board Overview', 14, 20);
+
+    const cols = board.columns;
+    const rows = board.rows;
+    const startX = 45;
+    const startY = 35;
+    const cellWidth = (280 - startX) / cols.length;
+    const cellHeight = 30;
+
+    // Column headers
+    doc.setFontSize(8);
+    doc.setTextColor(255, 255, 255);
+    cols.forEach((col, i) => {
+      doc.setFillColor(26, 26, 46);
+      doc.rect(startX + i * cellWidth, startY, cellWidth, 12, 'F');
+      doc.text(col.label, startX + i * cellWidth + cellWidth/2, startY + 8, { align: 'center' });
+    });
+
+    // Row labels and cells
+    const colorMap: Record<string, [number, number, number]> = {
+      pink: [255, 245, 245],
+      blue: [240, 247, 255],
+      yellow: [255, 255, 240],
+      green: [240, 255, 244],
+      purple: [250, 245, 255],
+      orange: [255, 250, 240],
+    };
+
+    rows.forEach((row, rowIdx) => {
+      const y = startY + 12 + rowIdx * cellHeight;
+
+      // Row label
+      const bgColor = colorMap[row.colour] || [245, 245, 245];
+      doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+      doc.rect(5, y, 38, cellHeight, 'F');
+      doc.setTextColor(60, 60, 60);
+      doc.setFontSize(7);
+      const labelLines = doc.splitTextToSize(row.label, 35);
+      doc.text(labelLines, 24, y + cellHeight/2 - (labelLines.length - 1) * 2, { align: 'center' });
+
+      // Cells with note counts
+      cols.forEach((col, colIdx) => {
+        const x = startX + colIdx * cellWidth;
+        const cellNotes = notes.filter(n => n.category === row.id && n.timeframe === col.id);
+
+        doc.setFillColor(250, 250, 250);
+        doc.rect(x, y, cellWidth, cellHeight, 'F');
+        doc.setDrawColor(230, 230, 230);
+        doc.rect(x, y, cellWidth, cellHeight, 'S');
+
+        if (cellNotes.length > 0) {
+          doc.setTextColor(102, 126, 234);
+          doc.setFontSize(12);
+          doc.text(String(cellNotes.length), x + cellWidth/2, y + cellHeight/2 + 2, { align: 'center' });
+          doc.setFontSize(6);
+          doc.setTextColor(150, 150, 150);
+          doc.text('notes', x + cellWidth/2, y + cellHeight/2 + 8, { align: 'center' });
+        }
+      });
+    });
+  }
+
+  // Page 3: Top Voted Ideas
+  doc.addPage('landscape');
+  doc.setFontSize(18);
+  doc.setTextColor(26, 26, 46);
+  doc.text('Top Voted Ideas', 14, 20);
+
+  const topVoted = [...notes].sort((a, b) => (b.votes || 0) - (a.votes || 0)).slice(0, 10);
   autoTable(doc, {
-    startY: 45,
-    head: [['Idea', 'Category', 'Timeframe', 'Votes']],
+    startY: 30,
+    head: [['Rank', 'Idea', 'Category', 'Timeframe', 'Votes']],
+    body: topVoted.map((note, i) => [
+      i + 1,
+      note.text.substring(0, 80) + (note.text.length > 80 ? '...' : ''),
+      board?.rows.find(r => r.id === note.category)?.label || note.category,
+      board?.columns.find(c => c.id === note.timeframe)?.label || note.timeframe,
+      note.votes || 0
+    ]),
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: [102, 126, 234] },
+    columnStyles: { 0: { cellWidth: 15 }, 4: { cellWidth: 20 } }
+  });
+
+  // Page 4+: All Ideas Table
+  doc.addPage('landscape');
+  doc.setFontSize(18);
+  doc.setTextColor(26, 26, 46);
+  doc.text('All Ideas', 14, 20);
+
+  const tableData = notes.map(note => [
+    note.text.substring(0, 70) + (note.text.length > 70 ? '...' : ''),
+    board?.rows.find(r => r.id === note.category)?.label || note.category,
+    board?.columns.find(c => c.id === note.timeframe)?.label || note.timeframe,
+    note.votes || 0,
+    note.createdBy || 'Anonymous'
+  ]);
+
+  autoTable(doc, {
+    startY: 30,
+    head: [['Idea', 'Category', 'Timeframe', 'Votes', 'Author']],
     body: tableData,
     styles: { fontSize: 8, cellPadding: 2 },
-    headStyles: { fillColor: [102, 126, 234] }
+    headStyles: { fillColor: [102, 126, 234] },
+    columnStyles: { 3: { cellWidth: 18 }, 4: { cellWidth: 35 } }
   });
+
   doc.save(`${filename}.pdf`);
 }
 

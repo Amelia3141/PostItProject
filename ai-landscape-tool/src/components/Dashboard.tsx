@@ -35,7 +35,7 @@ type SortOption = 'newest' | 'oldest' | 'mostVotes' | 'leastVotes' | 'alphabetic
 
 export function Dashboard({ board, readOnly = false }: DashboardProps) {
   const { notes, loading, addNote, editNote, removeNote, vote, undo, canUndo, restoreVersion, authors } = useNotes(board.id);
-  const { connections, addConnection } = useConnections(board.id);
+  const { connections, addConnection, removeConnection } = useConnections(board.id);
   const { user } = useUser();
   
   const sensors = useSensors(
@@ -239,6 +239,7 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
       rows={board.rows}
       onNoteClick={handleNoteClick}
       onConnect={handleConnect}
+      onDeleteConnection={removeConnection}
     />
   );
 
@@ -420,7 +421,7 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
         <div className={styles.exportGroup}>
           <button className={styles.filterBtn} onClick={() => exportToJSON(notes)}>JSON</button>
           <button className={styles.filterBtn} onClick={() => exportToCSV(notes)}>CSV</button>
-          <button className={styles.filterBtn} onClick={() => exportToPDF(notes)}>PDF</button>
+          <button className={styles.filterBtn} onClick={() => exportToPDF(notes, board.name, board)}>PDF</button>
           <button className={styles.filterBtn} onClick={() => exportToPPTX(notes, board)}>PPTX</button>
           {!readOnly && (
             <>
@@ -555,6 +556,7 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
         timeframes={board.columns.map(c => ({ id: c.id, label: c.label }))}
         readOnly={readOnly}
         boardId={board.id}
+        authors={authors}
       />
 
       <AIAnalysis

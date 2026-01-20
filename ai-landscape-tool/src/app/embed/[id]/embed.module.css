@@ -1,0 +1,134 @@
+.embed {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 1rem;
+  background: #fafafa;
+  min-height: 100vh;
+}
+
+.loading, .error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-size: 1.25rem;
+  color: #666;
+}
+
+.error {
+  color: #e53e3e;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 0.5rem 0;
+}
+
+.header p {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.board {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.boardHeader {
+  display: grid;
+  gap: 1px;
+  background: #f3f4f6;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.colHeader {
+  padding: 0.75rem;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #1a1a2e;
+  text-align: center;
+  background: #f9fafb;
+}
+
+.boardRow {
+  display: grid;
+  gap: 1px;
+  background: #f3f4f6;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.boardRow:last-child {
+  border-bottom: none;
+}
+
+.rowLabel {
+  padding: 0.75rem;
+  font-weight: 600;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: #f9fafb;
+}
+
+.rowLabel.pink { background: #fff5f5; color: #c53030; }
+.rowLabel.blue { background: #ebf8ff; color: #2b6cb0; }
+.rowLabel.yellow { background: #fffff0; color: #975a16; }
+.rowLabel.green { background: #f0fff4; color: #276749; }
+.rowLabel.purple { background: #faf5ff; color: #6b46c1; }
+.rowLabel.orange { background: #fffaf0; color: #c05621; }
+
+.cell {
+  padding: 0.5rem;
+  background: white;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.note {
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  border-left: 3px solid #e5e7eb;
+}
+
+.note.pink { border-left-color: #fc8181; background: #fff5f5; }
+.note.blue { border-left-color: #63b3ed; background: #ebf8ff; }
+.note.yellow { border-left-color: #f6e05e; background: #fffff0; }
+.note.green { border-left-color: #68d391; background: #f0fff4; }
+.note.purple { border-left-color: #b794f4; background: #faf5ff; }
+.note.orange { border-left-color: #f6ad55; background: #fffaf0; }
+
+.note p {
+  margin: 0;
+  color: #333;
+  line-height: 1.4;
+}
+
+.votes {
+  font-size: 0.65rem;
+  color: #888;
+  margin-top: 0.25rem;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 1rem;
+}

@@ -432,7 +432,7 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
         <div className={styles.exportGroup}>
           <button className={styles.filterBtn} onClick={() => exportToJSON(notes)}>JSON</button>
           <button className={styles.filterBtn} onClick={() => exportToCSV(notes)}>CSV</button>
-          <button className={styles.filterBtn} onClick={() => exportToPDF(notes, board.name, board)}>PDF</button>
+          <button className={styles.filterBtn} onClick={() => exportToPDF(notes, board.name, board, connections)}>PDF</button>
           <button className={styles.filterBtn} onClick={() => exportToPPTX(notes, board)}>PPTX</button>
           {!readOnly && (
             <>

@@ -1,4 +1,4 @@
-import { Note, Board } from '@/types';
+import { Note, Board, Connection } from '@/types';
 
 export function exportToJSON(notes: Note[], filename = 'ai-landscape-export') {
   const data = JSON.stringify(notes, null, 2);
@@ -41,7 +41,7 @@ export function exportToCSV(notes: Note[], filename = 'ai-landscape-export') {
   downloadBlob(blob, `${filename}.csv`);
 }
 
-export async function exportToPDF(notes: Note[], filename = 'ai-landscape-export', board?: Board) {
+export async function exportToPDF(notes: Note[], filename = 'ai-landscape-export', board?: Board, connections?: Connection[]) {
   const { jsPDF } = await import('jspdf');
   const { default: autoTable } = await import('jspdf-autotable');
   const doc = new jsPDF('landscape');
@@ -138,7 +138,99 @@ export async function exportToPDF(notes: Note[], filename = 'ai-landscape-export
     });
   }
 
-  // Page 3: Top Voted Ideas
+  // Page 3: Network/Connections View
+  if (connections && connections.length > 0) {
+    doc.addPage('landscape');
+    doc.setFontSize(18);
+    doc.setTextColor(26, 26, 46);
+    doc.text('Connections / Network View', 14, 20);
+
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`${connections.length} connections between ideas`, 14, 30);
+
+    // Create a simple network visualization
+    const connectedNotes = new Set<string>();
+    connections.forEach(c => {
+      connectedNotes.add(c.sourceId);
+      connectedNotes.add(c.targetId);
+    });
+
+    const relevantNotes = notes.filter(n => connectedNotes.has(n.id));
+    const nodePositions: Record<string, { x: number; y: number }> = {};
+
+    // Position nodes in a circular layout
+    const centerX = 148;
+    const centerY = 115;
+    const radius = 70;
+
+    relevantNotes.forEach((note, i) => {
+      const angle = (i / relevantNotes.length) * 2 * Math.PI - Math.PI / 2;
+      nodePositions[note.id] = {
+        x: centerX + radius * Math.cos(angle),
+        y: centerY + radius * Math.sin(angle),
+      };
+    });
+
+    // Draw connections (lines)
+    doc.setDrawColor(102, 126, 234);
+    doc.setLineWidth(0.5);
+    connections.forEach(conn => {
+      const source = nodePositions[conn.sourceId];
+      const target = nodePositions[conn.targetId];
+      if (source && target) {
+        doc.line(source.x, source.y, target.x, target.y);
+        // Draw arrowhead
+        const angle = Math.atan2(target.y - source.y, target.x - source.x);
+        const arrowSize = 3;
+        doc.line(
+          target.x - arrowSize * Math.cos(angle - Math.PI / 6),
+          target.y - arrowSize * Math.sin(angle - Math.PI / 6),
+          target.x,
+          target.y
+        );
+        doc.line(
+          target.x - arrowSize * Math.cos(angle + Math.PI / 6),
+          target.y - arrowSize * Math.sin(angle + Math.PI / 6),
+          target.x,
+          target.y
+        );
+      }
+    });
+
+    // Draw nodes (circles with labels)
+    relevantNotes.forEach((note, i) => {
+      const pos = nodePositions[note.id];
+      if (pos) {
+        doc.setFillColor(102, 126, 234);
+        doc.circle(pos.x, pos.y, 4, 'F');
+        doc.setFontSize(6);
+        doc.setTextColor(50, 50, 50);
+        const label = note.text.substring(0, 20) + (note.text.length > 20 ? '...' : '');
+        doc.text(label, pos.x, pos.y + 8, { align: 'center' });
+      }
+    });
+
+    // List connections as table
+    doc.setFontSize(10);
+    doc.setTextColor(26, 26, 46);
+    autoTable(doc, {
+      startY: 175,
+      head: [['From', 'To']],
+      body: connections.slice(0, 15).map(conn => {
+        const source = notes.find(n => n.id === conn.sourceId);
+        const target = notes.find(n => n.id === conn.targetId);
+        return [
+          source?.text.substring(0, 40) + (source && source.text.length > 40 ? '...' : '') || 'Unknown',
+          target?.text.substring(0, 40) + (target && target.text.length > 40 ? '...' : '') || 'Unknown',
+        ];
+      }),
+      styles: { fontSize: 7, cellPadding: 2 },
+      headStyles: { fillColor: [102, 126, 234] },
+    });
+  }
+
+  // Page 4: Top Voted Ideas
   doc.addPage('landscape');
   doc.setFontSize(18);
   doc.setTextColor(26, 26, 46);

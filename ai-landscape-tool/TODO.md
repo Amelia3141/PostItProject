@@ -9,21 +9,21 @@ Updated: 2025-12-24
 | Centre title text - title/header not centred | Fixed | 2025-12-24 |
 | Flow view labels - text not visible in Eisenhower Matrix | Fixed | 2025-12-24 |
 
-## Urgent
+## Urgent - Completed
 | Task | Status | Notes |
 |------|--------|-------|
-| Toast notifications | Pending | User feedback for actions |
-| Keyboard shortcuts | Pending | Quick add, navigation |
+| Toast notifications | Done | User feedback system |
+| Keyboard shortcuts | Done | N=new, 1/2/3=views, ?=help, /=search |
 
 ## Not Urgent
 | Task | Status | Notes |
 |------|--------|-------|
-| Export to PowerPoint | Pending | PPTX export |
-| Import from JSON | Pending | Restore from backup |
+| Export to PowerPoint | Done | HTML-based .ppt export |
+| Import from JSON | Done | File upload to restore notes |
 | @mentions in comments | Pending | Notify users |
 | Embed mode | Pending | iFrame embedding |
 | Note templates | Pending | Pre-filled note types |
-| Bulk note operations | Pending | Multi-select, bulk delete/move |
+| Bulk note operations | Done | Multi-select and delete |
 
 ## Future Direction (Premium)
 | Category | Features |

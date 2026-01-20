@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Note, Category, Timeframe, ViewMode, FilterState, Board } from '@/types';
 import { useNotes, useConnections, useFilteredNotes, useStats } from '@/lib/hooks';
 import { useUser } from '@/lib/userContext';
@@ -12,7 +12,9 @@ import { PresenceAvatars } from './PresenceAvatars';
 import { ActivityFeed } from './ActivityFeed';
 import { ThemeToggle } from './ThemeToggle';
 import { AIAnalysis } from './AIAnalysis';
-import { exportToJSON, exportToCSV, exportToPDF } from '@/lib/export';
+import { ToastProvider, useToast } from './Toast';
+import { useKeyboardShortcuts, ShortcutsModal } from './KeyboardShortcuts';
+import { exportToJSON, exportToCSV, exportToPDF, exportToPPTX, importFromJSON } from '@/lib/export';
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { DraggableNoteCard } from './DraggableNoteCard';
 import { DroppableCell } from './DroppableCell';
@@ -50,6 +52,10 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
   const [collapsedRows, setCollapsedRows] = useState<Set<string>>(new Set());
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showAIAnalysis, setShowAIAnalysis] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set());
+  const [bulkMode, setBulkMode] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [filters, setFilters] = useState<FilterState>({
     timeframe: 'all',
     category: 'all',
@@ -57,9 +63,50 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
     showConnections: false,
     authorId: undefined,
   });
-  
+
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Import handler
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    try {
+      const importedNotes = await importFromJSON(file);
+      let count = 0;
+      for (const noteData of importedNotes) {
+        if (noteData.text) {
+          await addNote({
+            text: noteData.text,
+            category: (noteData.category as Category) || board.rows[0]?.id as Category,
+            timeframe: (noteData.timeframe as Timeframe) || board.columns[0]?.id as Timeframe,
+            votes: noteData.votes || 0,
+            tags: noteData.tags || [],
+            connections: [],
+          });
+          count++;
+        }
+      }
+      alert(`Imported ${count} notes successfully!`);
+    } catch (err) {
+      alert('Failed to import: ' + (err as Error).message);
+    }
+    e.target.value = '';
+  };
+
+  // Bulk delete handler
+  const handleBulkDelete = async () => {
+    if (!user || selectedNotes.size === 0) return;
+    if (!confirm(`Delete ${selectedNotes.size} selected notes?`)) return;
+
+    const noteIds = Array.from(selectedNotes);
+    for (let i = 0; i < noteIds.length; i++) {
+      await removeNote(noteIds[i]);
+    }
+    setSelectedNotes(new Set());
+    setBulkMode(false);
+  };
 
   const filteredNotes = useFilteredNotes(notes, filters);
   
@@ -363,19 +410,44 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
           </>
         )}
         
-        <button 
-          className={styles.aiBtn} 
+        <button
+          className={styles.aiBtn}
           onClick={() => setShowAIAnalysis(true)}
         >
           AI Analysis
         </button>
-        
-        <button className={styles.filterBtn} onClick={() => exportToJSON(notes)}>JSON</button>
-        <button className={styles.filterBtn} onClick={() => exportToCSV(notes)}>CSV</button>
-        <button className={styles.filterBtn} onClick={() => exportToPDF(notes)}>PDF</button>
-        
+
+        <div className={styles.exportGroup}>
+          <button className={styles.filterBtn} onClick={() => exportToJSON(notes)}>JSON</button>
+          <button className={styles.filterBtn} onClick={() => exportToCSV(notes)}>CSV</button>
+          <button className={styles.filterBtn} onClick={() => exportToPDF(notes)}>PDF</button>
+          <button className={styles.filterBtn} onClick={() => exportToPPTX(notes, board)}>PPTX</button>
+          {!readOnly && (
+            <>
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleImport}
+                style={{ display: 'none' }}
+                id="import-json"
+              />
+              <label htmlFor="import-json" className={styles.filterBtn} style={{ cursor: 'pointer' }}>
+                Import
+              </label>
+            </>
+          )}
+        </div>
+
+        <button
+          className={styles.filterBtn}
+          onClick={() => setShowShortcuts(true)}
+          title="Keyboard shortcuts (?)"
+        >
+          ⌨️
+        </button>
+
         {viewMode === 'flow' && (
-          <button 
+          <button
             className={styles.filterBtn}
             onClick={() => setIsFullscreen(!isFullscreen)}
           >
@@ -491,6 +563,23 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
         isOpen={showAIAnalysis}
         onClose={() => setShowAIAnalysis(false)}
       />
+
+      <ShortcutsModal
+        isOpen={showShortcuts}
+        onClose={() => setShowShortcuts(false)}
+      />
+
+      {bulkMode && selectedNotes.size > 0 && (
+        <div className={styles.bulkActions}>
+          <span>{selectedNotes.size} selected</span>
+          <button onClick={handleBulkDelete} className={styles.bulkDeleteBtn}>
+            Delete Selected
+          </button>
+          <button onClick={() => { setSelectedNotes(new Set()); setBulkMode(false); }}>
+            Cancel
+          </button>
+        </div>
+      )}
     </div>
   );
 }

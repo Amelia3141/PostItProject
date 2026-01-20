@@ -209,6 +209,17 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
     await logActivity(board.id, 'connection_created', user.id, user.name, user.colour, undefined, undefined, `"${sourceNote?.text?.substring(0, 20)}..." → "${targetNote?.text?.substring(0, 20)}..."`);
   };
 
+  const handleDeleteConnection = async (connectionId: string) => {
+    if (readOnly || !user) return;
+    const connection = connections.find(c => c.id === connectionId);
+    if (connection) {
+      const sourceNote = notes.find(n => n.id === connection.sourceId);
+      const targetNote = notes.find(n => n.id === connection.targetId);
+      await removeConnection(connectionId);
+      await logActivity(board.id, 'connection_deleted', user.id, user.name, user.colour, undefined, undefined, `"${sourceNote?.text?.substring(0, 20)}..." → "${targetNote?.text?.substring(0, 20)}..."`);
+    }
+  };
+
   const toggleRowCollapse = (rowId: string) => {
     setCollapsedRows(prev => {
       const next = new Set(prev);
@@ -239,7 +250,7 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
       rows={board.rows}
       onNoteClick={handleNoteClick}
       onConnect={handleConnect}
-      onDeleteConnection={removeConnection}
+      onDeleteConnection={handleDeleteConnection}
     />
   );
 

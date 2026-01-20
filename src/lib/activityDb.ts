@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 const ACTIVITY_PATH = 'activity';
 
-export type ActivityType = 'note_created' | 'note_edited' | 'note_deleted' | 'note_moved' | 'vote' | 'comment_added' | 'connection_created';
+export type ActivityType = 'note_created' | 'note_edited' | 'note_deleted' | 'note_moved' | 'vote' | 'comment_added' | 'connection_created' | 'connection_deleted';
 
 export interface Activity {
   id: string;

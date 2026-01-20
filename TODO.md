@@ -25,12 +25,13 @@ Updated: 2025-01-20
 | Embed mode | Done | iFrame embedding at /embed/[id] |
 | Note templates | Done | Pre-filled note types (Opportunity, Risk, Action, Question, Insight) |
 | Bulk note operations | Done | Multi-select and delete |
-| Deletable arrows in Flow view | Done | Click arrows to delete connections |
+| Deletable arrows in Flow view | Done | Right-click or select+Delete to remove connections |
 | Enhanced PDF export | Done | Board matrix view, top voted section, landscape layout |
 
 ## Pending
 | Task | Status | Notes |
 |------|--------|-------|
+| New user onboarding tutorial | Pending | Basic intro/walkthrough for first-time users |
 | Integration with Henry's network analysis | Pending | Centralities, longest/shortest paths |
 | Add new layers feature | Pending | Add rows/categories dynamically |
 | Enrich roadmap with topic embedding | Pending | Scientometrics analysis |

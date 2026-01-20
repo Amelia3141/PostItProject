@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import ReactFlow, {
   Node,
   Edge,
@@ -15,6 +15,12 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Note, Connection, BoardColumn, BoardRow } from '@/types';
+
+interface ContextMenu {
+  x: number;
+  y: number;
+  edgeId: string;
+}
 
 interface FlowViewProps {
   notes: Note[];
@@ -65,6 +71,9 @@ function NoteNode({ data }: { data: { label: string; note: Note; background: str
 const nodeTypes = { noteNode: NoteNode };
 
 export function FlowView({ notes, connections, columns, rows, onNoteClick, onConnect, onDeleteConnection }: FlowViewProps) {
+  const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+
   const buildNodes = useCallback((): Node[] => {
     const nodes: Node[] = [];
     const cellCounts: Record<string, number> = {};
@@ -163,11 +172,18 @@ export function FlowView({ notes, connections, columns, rows, onNoteClick, onCon
       id: conn.id,
       source: conn.sourceId,
       target: conn.targetId,
-      style: { stroke: '#667eea', strokeWidth: 2 },
-      markerEnd: { type: MarkerType.ArrowClosed, color: '#667eea' },
+      style: {
+        stroke: selectedEdgeId === conn.id ? '#e53e3e' : '#667eea',
+        strokeWidth: selectedEdgeId === conn.id ? 3 : 2
+      },
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        color: selectedEdgeId === conn.id ? '#e53e3e' : '#667eea'
+      },
       animated: false,
+      selected: selectedEdgeId === conn.id,
     }));
-  }, [connections]);
+  }, [connections, selectedEdgeId]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(buildNodes());
   const [edges, setEdges, onEdgesChange] = useEdgesState(buildEdges());
@@ -178,7 +194,7 @@ export function FlowView({ notes, connections, columns, rows, onNoteClick, onCon
 
   useEffect(() => {
     setEdges(buildEdges());
-  }, [connections, buildEdges, setEdges]);
+  }, [connections, buildEdges, setEdges, selectedEdgeId]);
 
   const handleConnect = useCallback((params: FlowConnection) => {
     if (params.source && params.target) {
@@ -193,14 +209,56 @@ export function FlowView({ notes, connections, columns, rows, onNoteClick, onCon
     }
   }, [onNoteClick]);
 
-  const onEdgeClick = useCallback((_: any, edge: Edge) => {
-    if (onDeleteConnection && window.confirm('Delete this connection?')) {
-      onDeleteConnection(edge.id);
+  // Click edge to select it
+  const onEdgeClick = useCallback((_: React.MouseEvent, edge: Edge) => {
+    setSelectedEdgeId(prev => prev === edge.id ? null : edge.id);
+    setContextMenu(null);
+  }, []);
+
+  // Right-click edge to show context menu
+  const onEdgeContextMenu = useCallback((event: React.MouseEvent, edge: Edge) => {
+    event.preventDefault();
+    setContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      edgeId: edge.id,
+    });
+    setSelectedEdgeId(edge.id);
+  }, []);
+
+  // Handle delete from context menu
+  const handleDeleteFromMenu = useCallback(() => {
+    if (contextMenu && onDeleteConnection) {
+      onDeleteConnection(contextMenu.edgeId);
     }
-  }, [onDeleteConnection]);
+    setContextMenu(null);
+    setSelectedEdgeId(null);
+  }, [contextMenu, onDeleteConnection]);
+
+  // Handle keyboard delete
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.key === 'Delete' || event.key === 'Backspace') && selectedEdgeId && onDeleteConnection) {
+        onDeleteConnection(selectedEdgeId);
+        setSelectedEdgeId(null);
+      }
+      if (event.key === 'Escape') {
+        setSelectedEdgeId(null);
+        setContextMenu(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedEdgeId, onDeleteConnection]);
+
+  // Close context menu on click outside
+  const onPaneClick = useCallback(() => {
+    setContextMenu(null);
+    setSelectedEdgeId(null);
+  }, []);
 
   return (
-    <div style={{ width: '100%', height: '700px', background: 'white', borderRadius: '12px', border: '1px solid #e9ecef' }}>
+    <div style={{ width: '100%', height: '700px', background: 'white', borderRadius: '12px', border: '1px solid #e9ecef', position: 'relative' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -209,6 +267,8 @@ export function FlowView({ notes, connections, columns, rows, onNoteClick, onCon
         onConnect={handleConnect}
         onNodeClick={onNodeClick}
         onEdgeClick={onEdgeClick}
+        onEdgeContextMenu={onEdgeContextMenu}
+        onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.1 }}
@@ -217,6 +277,62 @@ export function FlowView({ notes, connections, columns, rows, onNoteClick, onCon
         <Background color="#f1f3f4" gap={20} />
         <Controls />
       </ReactFlow>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          style={{
+            position: 'fixed',
+            left: contextMenu.x,
+            top: contextMenu.y,
+            background: 'white',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            border: '1px solid #e5e7eb',
+            zIndex: 1000,
+            overflow: 'hidden',
+          }}
+        >
+          <button
+            onClick={handleDeleteFromMenu}
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: '10px 16px',
+              background: 'white',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '14px',
+              color: '#ef4444',
+              textAlign: 'left',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+          >
+            Delete connection
+          </button>
+        </div>
+      )}
+
+      {/* Selection hint */}
+      {selectedEdgeId && !contextMenu && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '16px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(0,0,0,0.8)',
+            color: 'white',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            zIndex: 100,
+          }}
+        >
+          Press Delete or Backspace to remove • Esc to cancel
+        </div>
+      )}
     </div>
   );
 }

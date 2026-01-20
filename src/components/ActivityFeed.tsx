@@ -16,6 +16,7 @@ const activityLabels: Record<ActivityType, string> = {
   vote: 'voted on a note',
   comment_added: 'added a comment',
   connection_created: 'connected notes',
+  connection_deleted: 'removed connection',
 };
 
 export function ActivityFeed({ boardId }: ActivityFeedProps) {

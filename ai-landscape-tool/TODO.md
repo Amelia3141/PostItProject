@@ -1,6 +1,6 @@
 # AI Landscape Tool - Project TODO
 
-Updated: 2025-12-24
+Updated: 2025-01-20
 
 ## Bugs - Fixed
 | Bug | Status | Fixed |
@@ -8,6 +8,7 @@ Updated: 2025-12-24
 | Click-to-edit - clicking note triggered drag instead of modal | Fixed | 2025-12-24 |
 | Centre title text - title/header not centred | Fixed | 2025-12-24 |
 | Flow view labels - text not visible in Eisenhower Matrix | Fixed | 2025-12-24 |
+| Settings > Add column not working | Fixed | 2025-01-20 |
 
 ## Urgent - Completed
 | Task | Status | Notes |
@@ -20,10 +21,19 @@ Updated: 2025-12-24
 |------|--------|-------|
 | Export to PowerPoint | Done | HTML-based .ppt export |
 | Import from JSON | Done | File upload to restore notes |
-| @mentions in comments | Pending | Notify users |
-| Embed mode | Pending | iFrame embedding |
-| Note templates | Pending | Pre-filled note types |
+| @mentions in comments | Done | Highlight mentions, picker UI |
+| Embed mode | Done | iFrame embedding at /embed/[id] |
+| Note templates | Done | Pre-filled note types (Opportunity, Risk, Action, Question, Insight) |
 | Bulk note operations | Done | Multi-select and delete |
+| Deletable arrows in Flow view | Done | Click arrows to delete connections |
+| Enhanced PDF export | Done | Board matrix view, top voted section, landscape layout |
+
+## Pending
+| Task | Status | Notes |
+|------|--------|-------|
+| Integration with Henry's network analysis | Pending | Centralities, longest/shortest paths |
+| Add new layers feature | Pending | Add rows/categories dynamically |
+| Enrich roadmap with topic embedding | Pending | Scientometrics analysis |
 
 ## Future Direction (Premium)
 | Category | Features |
@@ -37,19 +47,22 @@ Updated: 2025-12-24
 | Enterprise | SSO/company login |
 
 ## Completed Features
-- Flow view with SVG connections
+- Flow view with SVG connections and deletable arrows
 - Drag-and-drop between cells
-- Export (JSON, CSV, PDF)
+- Export (JSON, CSV, PDF with board matrix view, PowerPoint)
+- Import from JSON
 - Quick vote buttons
 - Sort and filter options
 - Collapse/expand rows
 - Fullscreen mode
-- Comments on notes
+- Comments on notes with @mentions support
 - User identification with colours
 - Authorship tracking
 - Multi-board support
 - Board templates (AI Landscape, SWOT, Kanban, Retrospective, User Story Map, Eisenhower Matrix, Blank)
+- Note templates (Opportunity, Risk, Action Item, Question, Insight)
 - Shareable links with permissions
+- Embed mode for iframes (/embed/[id])
 - Real-time presence indicators
 - Mobile responsive layout
 - Activity feed
@@ -60,6 +73,9 @@ Updated: 2025-12-24
 - Board archive system with timestamps
 - Polished UI design (minimalist, professional)
 - AI Analysis with Claude API (6 types: Executive Summary, Sentiment, Themes, Stakeholder, Actions, Gaps)
+- Toast notifications for user feedback
+- Keyboard shortcuts (N=new, 1/2/3=views, ?=help, /=search, A=AI, E=export)
+- Bulk note operations (multi-select and delete)
 
 ## Setup Instructions
 

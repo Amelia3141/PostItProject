@@ -20,6 +20,7 @@ import { DroppableCell } from './DroppableCell';
 import { FlowView } from './FlowView';
 import NetworkAnalysisPanel, { VisualizationMode } from './NetworkAnalysisPanel';
 import { OnboardingTutorial } from './OnboardingTutorial';
+import { calculateDensity, getColor, getCellDensity, getGapSummary, DensityMethod, ColorScheme, DensityCell } from '@/lib/density';
 import styles from '@/app/Dashboard.module.css';
 
 interface DashboardProps {
@@ -64,6 +65,9 @@ export function Dashboard({ board, readOnly = false, showShortcuts = false, show
   const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set());
   const [bulkMode, setBulkMode] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [densityMethod, setDensityMethod] = useState<DensityMethod>('grid');
+  const [colorScheme, setColorScheme] = useState<ColorScheme>('heat');
+  const [showDensitySettings, setShowDensitySettings] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const flowViewRef = useRef<HTMLDivElement>(null);
   const [filters, setFilters] = useState<FilterState>({
@@ -248,24 +252,25 @@ export function Dashboard({ board, readOnly = false, showShortcuts = false, show
     );
   };
 
-  // Calculate heatmap intensity for a cell (0-1 based on note count)
-  const getHeatmapIntensity = (rowId: string, colId: string): number | undefined => {
+  // Calculate density cells using the selected method
+  const densityCells = showHeatmap
+    ? calculateDensity(processedNotes, board, { method: densityMethod, colorScheme })
+    : [];
+
+  // Get heatmap color for a cell
+  const getHeatmapColor = (rowId: string, colId: string): string | undefined => {
     if (!showHeatmap) return undefined;
 
-    const cellCount = getNotesByCell(rowId, colId).length;
-    if (cellCount === 0) return 0;
+    const cell = getCellDensity(densityCells, rowId, colId);
+    if (!cell) return undefined;
 
-    // Find max note count across all cells
-    let maxCount = 0;
-    board.rows.forEach(row => {
-      board.columns.forEach(col => {
-        const count = getNotesByCell(row.id, col.id).length;
-        if (count > maxCount) maxCount = count;
-      });
-    });
-
-    return maxCount > 0 ? cellCount / maxCount : 0;
+    return getColor(cell.normalised, colorScheme, densityMethod === 'gaps');
   };
+
+  // Get gap summary for display
+  const gapSummary = showHeatmap && densityMethod === 'gaps'
+    ? getGapSummary(densityCells, board)
+    : null;
 
   if (loading) {
     return <div className={styles.loading}>Loading...</div>;
@@ -393,13 +398,43 @@ export function Dashboard({ board, readOnly = false, showShortcuts = false, show
         </div>
 
         {viewMode === 'board' && (
-          <button
-            className={`${styles.filterBtn} ${showHeatmap ? styles.active : ''}`}
-            onClick={() => setShowHeatmap(!showHeatmap)}
-            title="Toggle heatmap visualization"
-          >
-            {showHeatmap ? 'Heatmap On' : 'Heatmap'}
-          </button>
+          <div className={styles.heatmapControls}>
+            <button
+              className={`${styles.filterBtn} ${showHeatmap ? styles.active : ''}`}
+              onClick={() => setShowHeatmap(!showHeatmap)}
+              title="Toggle heatmap visualization"
+            >
+              {showHeatmap ? 'Heatmap On' : 'Heatmap'}
+            </button>
+            {showHeatmap && (
+              <>
+                <select
+                  className={styles.sortSelect}
+                  value={densityMethod}
+                  onChange={(e) => setDensityMethod(e.target.value as DensityMethod)}
+                  title="Density calculation method"
+                >
+                  <option value="grid">Grid Count</option>
+                  <option value="kde">KDE (Smooth)</option>
+                  <option value="structured">Structured</option>
+                  <option value="votes">Vote Weighted</option>
+                  <option value="gaps">Gap Analysis</option>
+                </select>
+                <select
+                  className={styles.sortSelect}
+                  value={colorScheme}
+                  onChange={(e) => setColorScheme(e.target.value as ColorScheme)}
+                  title="Color scheme"
+                >
+                  <option value="heat">Heat (G→Y→R)</option>
+                  <option value="viridis">Viridis</option>
+                  <option value="blues">Blues</option>
+                  <option value="greens">Greens</option>
+                  <option value="diverging">Diverging</option>
+                </select>
+              </>
+            )}
+          </div>
         )}
 
         <input
@@ -555,7 +590,7 @@ export function Dashboard({ board, readOnly = false, showShortcuts = false, show
                   </div>
                 </div>
                 {!collapsedRows.has(row.id) && board.columns.map((col) => (
-                  <DroppableCell key={col.id} category={row.id as Category} timeframe={col.id as Timeframe} heatmapIntensity={getHeatmapIntensity(row.id, col.id)}>
+                  <DroppableCell key={col.id} category={row.id as Category} timeframe={col.id as Timeframe} heatmapColor={getHeatmapColor(row.id, col.id)}>
                     {getNotesByCell(row.id, col.id).map((note) => (
                       <DraggableNoteCard
                         key={note.id}

@@ -8,31 +8,17 @@ interface DroppableCellProps {
   category: Category;
   timeframe: Timeframe;
   children: React.ReactNode;
-  heatmapIntensity?: number; // 0-1 value for heatmap coloring
+  heatmapColor?: string; // Pre-calculated color from density system
 }
 
-// Heatmap color scale from light to dark (green-yellow-red)
-function getHeatmapColor(intensity: number): string {
-  if (intensity === 0) return 'transparent';
-
-  // Interpolate from green (low) through yellow (medium) to red (high)
-  const r = Math.round(intensity < 0.5 ? intensity * 2 * 255 : 255);
-  const g = Math.round(intensity < 0.5 ? 255 : (1 - (intensity - 0.5) * 2) * 255);
-  const b = 0;
-
-  return `rgba(${r}, ${g}, ${b}, ${0.15 + intensity * 0.25})`;
-}
-
-export function DroppableCell({ category, timeframe, children, heatmapIntensity }: DroppableCellProps) {
+export function DroppableCell({ category, timeframe, children, heatmapColor }: DroppableCellProps) {
   const { isOver, setNodeRef } = useDroppable({
     id: `${category}-${timeframe}`,
   });
 
   const backgroundColor = isOver
     ? 'rgba(0, 0, 0, 0.05)'
-    : heatmapIntensity !== undefined
-      ? getHeatmapColor(heatmapIntensity)
-      : undefined;
+    : heatmapColor || undefined;
 
   return (
     <div

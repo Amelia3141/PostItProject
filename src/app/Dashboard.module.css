@@ -410,6 +410,12 @@
   border-color: var(--accent);
 }
 
+.heatmapControls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .undoBtn {
   padding: 0.625rem 1rem;
   background: var(--bg-elevated);

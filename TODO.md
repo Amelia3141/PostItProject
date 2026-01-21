@@ -31,23 +31,28 @@ Updated: 2025-01-20
 ## Pending
 | Task | Status | Notes |
 |------|--------|-------|
-| New user onboarding tutorial | Pending | Basic intro/walkthrough for first-time users |
-| Integration with Henry's network analysis | Pending | Centralities, longest/shortest paths |
-| Add new layers feature | Pending | Add rows/categories dynamically |
 | Enrich roadmap with topic embedding | Pending | Scientometrics analysis |
+
+## Priority Features (User Voted)
+| Task | Priority | Notes |
+|------|----------|-------|
+| Executive summary + actions generator | Done | "Full Report" analysis type with summary, decisions, actions |
+| Auto-cluster similar ideas | Done | "Auto-Cluster" analysis type with semantic grouping and connection suggestions |
+| Visual cluster heatmaps | Done | Heatmap toggle in board view showing note density |
+| Auto-generated PDF reports | Done | "AI Report" button generates comprehensive PDF with AI analysis |
+| Slack integration | Medium | Post updates, notifications to Slack channels |
 
 ## Future Direction (Premium)
 | Category | Features |
 |----------|----------|
 | Branding | Custom domain, per-user themes, per-board themes, global themes |
-| Analytics | Live session insights, GitHub-style heatmap, ideas rate chart, cluster heatmaps |
-| AI Enhanced | Auto-cluster, "what's missing" suggestions, sentiment visualisation, auto-generated reports |
-| Export | AI PDF reports, AI PowerPoint, per-stakeholder exports |
+| Analytics | Live session insights, GitHub-style heatmap, ideas rate chart |
 | Permissions | Admin/participant roles, view permissions, admin settings, audit logs |
-| Integrations | Slack, Notion/Confluence, Zapier webhooks |
+| Integrations | Notion/Confluence, Zapier webhooks |
 | Enterprise | SSO/company login |
 
 ## Completed Features
+- New user onboarding tutorial with element highlighting and step-by-step guide
 - Flow view with SVG connections and deletable arrows
 - Drag-and-drop between cells
 - Export (JSON, CSV, PDF with board matrix view, PowerPoint)
@@ -68,15 +73,18 @@ Updated: 2025-01-20
 - Mobile responsive layout
 - Activity feed
 - Version history with diffs
-- Board settings editor
+- Board settings editor (with dynamic row/column/layer management)
 - Dark mode toggle
 - Column colour options
 - Board archive system with timestamps
 - Polished UI design (minimalist, professional)
-- AI Analysis with Claude API (6 types: Executive Summary, Sentiment, Themes, Stakeholder, Actions, Gaps)
+- AI Analysis with Claude API (8 types: Full Report, Executive Summary, Auto-Cluster, Sentiment, Themes, Stakeholder, Actions, Gaps)
+- AI-generated PDF reports with comprehensive analysis
 - Toast notifications for user feedback
 - Keyboard shortcuts (N=new, 1/2/3=views, ?=help, /=search, A=AI, E=export)
 - Bulk note operations (multi-select and delete)
+- Network analysis panel (centralities, paths, graph export, visualization modes)
+- Heatmap visualization for board view (note density)
 
 ## Setup Instructions
 

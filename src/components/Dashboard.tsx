@@ -10,20 +10,25 @@ import { NoteModal } from './NoteModal';
 import { QuickAddNote } from './QuickAddNote';
 import { PresenceAvatars } from './PresenceAvatars';
 import { ActivityFeed } from './ActivityFeed';
-import { ThemeToggle } from './ThemeToggle';
 import { AIAnalysis } from './AIAnalysis';
 import { ToastProvider, useToast } from './Toast';
-import { useKeyboardShortcuts, ShortcutsModal } from './KeyboardShortcuts';
-import { exportToJSON, exportToCSV, exportToPDF, exportToPPTX, importFromJSON } from '@/lib/export';
+import { ShortcutsModal } from './KeyboardShortcuts';
+import { exportToJSON, exportToCSV, exportToPDF, exportToPPTX, exportToAIPDF, importFromJSON } from '@/lib/export';
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { DraggableNoteCard } from './DraggableNoteCard';
 import { DroppableCell } from './DroppableCell';
 import { FlowView } from './FlowView';
+import NetworkAnalysisPanel, { VisualizationMode } from './NetworkAnalysisPanel';
+import { OnboardingTutorial } from './OnboardingTutorial';
 import styles from '@/app/Dashboard.module.css';
 
 interface DashboardProps {
   board: Board;
   readOnly?: boolean;
+  showShortcuts?: boolean;
+  showTutorial?: boolean;
+  onCloseShortcuts?: () => void;
+  onCloseTutorial?: () => void;
 }
 
 function getRotation(id: string): number {
@@ -33,7 +38,7 @@ function getRotation(id: string): number {
 
 type SortOption = 'newest' | 'oldest' | 'mostVotes' | 'leastVotes' | 'alphabetical';
 
-export function Dashboard({ board, readOnly = false }: DashboardProps) {
+export function Dashboard({ board, readOnly = false, showShortcuts = false, showTutorial = false, onCloseShortcuts, onCloseTutorial }: DashboardProps) {
   const { notes, loading, addNote, editNote, removeNote, vote, undo, canUndo, restoreVersion, authors } = useNotes(board.id);
   const { connections, addConnection, removeConnection } = useConnections(board.id);
   const { user } = useUser();
@@ -52,10 +57,15 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
   const [collapsedRows, setCollapsedRows] = useState<Set<string>>(new Set());
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showAIAnalysis, setShowAIAnalysis] = useState(false);
-  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showNetworkAnalysis, setShowNetworkAnalysis] = useState(false);
+  const [highlightedNodeId, setHighlightedNodeId] = useState<string | null>(null);
+  const [highlightedPath, setHighlightedPath] = useState<string[] | null>(null);
+  const [visualizationMode, setVisualizationMode] = useState<VisualizationMode>('none');
   const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set());
   const [bulkMode, setBulkMode] = useState(false);
+  const [showHeatmap, setShowHeatmap] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const flowViewRef = useRef<HTMLDivElement>(null);
   const [filters, setFilters] = useState<FilterState>({
     timeframe: 'all',
     category: 'all',
@@ -238,20 +248,44 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
     );
   };
 
+  // Calculate heatmap intensity for a cell (0-1 based on note count)
+  const getHeatmapIntensity = (rowId: string, colId: string): number | undefined => {
+    if (!showHeatmap) return undefined;
+
+    const cellCount = getNotesByCell(rowId, colId).length;
+    if (cellCount === 0) return 0;
+
+    // Find max note count across all cells
+    let maxCount = 0;
+    board.rows.forEach(row => {
+      board.columns.forEach(col => {
+        const count = getNotesByCell(row.id, col.id).length;
+        if (count > maxCount) maxCount = count;
+      });
+    });
+
+    return maxCount > 0 ? cellCount / maxCount : 0;
+  };
+
   if (loading) {
     return <div className={styles.loading}>Loading...</div>;
   }
 
   const flowViewContent = (
-    <FlowView
-      notes={processedNotes}
-      connections={connections}
-      columns={board.columns}
-      rows={board.rows}
-      onNoteClick={handleNoteClick}
-      onConnect={handleConnect}
-      onDeleteConnection={handleDeleteConnection}
-    />
+    <div ref={flowViewRef}>
+      <FlowView
+        notes={processedNotes}
+        connections={connections}
+        columns={board.columns}
+        rows={board.rows}
+        onNoteClick={handleNoteClick}
+        onConnect={handleConnect}
+        onDeleteConnection={handleDeleteConnection}
+        highlightedNodeId={highlightedNodeId}
+        highlightedPath={highlightedPath}
+        visualizationMode={visualizationMode}
+      />
+    </div>
   );
 
   return (
@@ -264,7 +298,6 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
               {user.name}
             </div>
           )}
-          <ThemeToggle />
         </div>
         <div className={styles.headerTitle}>
           <h1 className={styles.title}>{board.name}</h1>
@@ -359,6 +392,16 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
           </button>
         </div>
 
+        {viewMode === 'board' && (
+          <button
+            className={`${styles.filterBtn} ${showHeatmap ? styles.active : ''}`}
+            onClick={() => setShowHeatmap(!showHeatmap)}
+            title="Toggle heatmap visualization"
+          >
+            {showHeatmap ? 'Heatmap On' : 'Heatmap'}
+          </button>
+        )}
+
         <input
           type="text"
           placeholder="Search ideas..."
@@ -432,8 +475,21 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
         <div className={styles.exportGroup}>
           <button className={styles.filterBtn} onClick={() => exportToJSON(notes)}>JSON</button>
           <button className={styles.filterBtn} onClick={() => exportToCSV(notes)}>CSV</button>
-          <button className={styles.filterBtn} onClick={() => exportToPDF(notes, board.name, board, connections)}>PDF</button>
+          <button className={styles.filterBtn} onClick={() => exportToPDF(notes, board.name, board, connections, flowViewRef.current)}>PDF</button>
           <button className={styles.filterBtn} onClick={() => exportToPPTX(notes, board)}>PPTX</button>
+          <button
+            className={styles.aiBtn}
+            onClick={async () => {
+              try {
+                await exportToAIPDF(notes, board, connections, flowViewRef.current);
+              } catch (err: any) {
+                alert('AI PDF export failed: ' + err.message);
+              }
+            }}
+            title="Generate AI-enhanced strategic report"
+          >
+            AI Report
+          </button>
           {!readOnly && (
             <>
               <input
@@ -450,21 +506,22 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
           )}
         </div>
 
-        <button
-          className={styles.filterBtn}
-          onClick={() => setShowShortcuts(true)}
-          title="Keyboard shortcuts (?)"
-        >
-          ⌨️
-        </button>
-
         {viewMode === 'flow' && (
-          <button
-            className={styles.filterBtn}
-            onClick={() => setIsFullscreen(!isFullscreen)}
-          >
-            {isFullscreen ? 'Exit' : 'Fullscreen'}
-          </button>
+          <>
+            <button
+              className={`${styles.filterBtn} ${showNetworkAnalysis ? styles.active : ''}`}
+              onClick={() => setShowNetworkAnalysis(!showNetworkAnalysis)}
+              title="Network Analysis"
+            >
+              Network
+            </button>
+            <button
+              className={styles.filterBtn}
+              onClick={() => setIsFullscreen(!isFullscreen)}
+            >
+              {isFullscreen ? 'Exit' : 'Fullscreen'}
+            </button>
+          </>
         )}
       </div>
 
@@ -498,7 +555,7 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
                   </div>
                 </div>
                 {!collapsedRows.has(row.id) && board.columns.map((col) => (
-                  <DroppableCell key={col.id} category={row.id as Category} timeframe={col.id as Timeframe}>
+                  <DroppableCell key={col.id} category={row.id as Category} timeframe={col.id as Timeframe} heatmapIntensity={getHeatmapIntensity(row.id, col.id)}>
                     {getNotesByCell(row.id, col.id).map((note) => (
                       <DraggableNoteCard
                         key={note.id}
@@ -539,7 +596,7 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
       {viewMode === 'flow' && (
         isFullscreen ? (
           <div className={styles.fullscreenFlow}>
-            <button 
+            <button
               className={styles.exitFullscreenBtn}
               onClick={() => setIsFullscreen(false)}
             >
@@ -548,7 +605,22 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
             {flowViewContent}
           </div>
         ) : (
-          flowViewContent
+          <div className={styles.flowContainer}>
+            <div className={styles.flowMain}>
+              {flowViewContent}
+            </div>
+            {showNetworkAnalysis && (
+              <div className={styles.networkAnalysisSidebar}>
+                <NetworkAnalysisPanel
+                  notes={notes}
+                  connections={connections}
+                  onHighlightNode={setHighlightedNodeId}
+                  onHighlightPath={setHighlightedPath}
+                  onVisualizationModeChange={setVisualizationMode}
+                />
+              </div>
+            )}
+          </div>
         )
       )}
 
@@ -579,7 +651,7 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
 
       <ShortcutsModal
         isOpen={showShortcuts}
-        onClose={() => setShowShortcuts(false)}
+        onClose={() => onCloseShortcuts?.()}
       />
 
       {bulkMode && selectedNotes.size > 0 && (
@@ -592,6 +664,13 @@ export function Dashboard({ board, readOnly = false }: DashboardProps) {
             Cancel
           </button>
         </div>
+      )}
+
+      {!readOnly && (
+        <OnboardingTutorial
+          forceShow={showTutorial}
+          onComplete={() => onCloseTutorial?.()}
+        />
       )}
     </div>
   );

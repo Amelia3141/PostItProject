@@ -8,6 +8,7 @@ import { useUser } from '@/lib/userContext';
 import { ShareModal } from './ShareModal';
 import { BoardSettings } from './BoardSettings';
 import { ArchivedBoards } from './ArchivedBoards';
+import { ThemeToggle } from './ThemeToggle';
 import styles from '@/app/Dashboard.module.css';
 
 interface BoardSelectorProps {
@@ -15,9 +16,11 @@ interface BoardSelectorProps {
   onSelectBoard: (boardId: string) => void;
   onCreateBoard: (board: Board) => void;
   onUpdateBoard: (board: Board) => void;
+  onShowShortcuts?: () => void;
+  onShowTutorial?: () => void;
 }
 
-export function BoardSelector({ currentBoardId, onSelectBoard, onCreateBoard, onUpdateBoard }: BoardSelectorProps) {
+export function BoardSelector({ currentBoardId, onSelectBoard, onCreateBoard, onUpdateBoard, onShowShortcuts, onShowTutorial }: BoardSelectorProps) {
   const { user } = useUser();
   const [boards, setBoards] = useState<Board[]>([]);
   const [archivedCount, setArchivedCount] = useState(0);
@@ -146,16 +149,16 @@ export function BoardSelector({ currentBoardId, onSelectBoard, onCreateBoard, on
     <div className={styles.boardSelector}>
       <div className={styles.boardSelectorHeader}>
         <h3>Your Boards</h3>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           {currentBoard && (
             <>
-              <button 
+              <button
                 className={styles.settingsBtn}
                 onClick={() => setShowSettings(true)}
               >
                 Settings
               </button>
-              <button 
+              <button
                 className={styles.shareBtn}
                 onClick={() => setShowShareModal(true)}
               >
@@ -163,12 +166,31 @@ export function BoardSelector({ currentBoardId, onSelectBoard, onCreateBoard, on
               </button>
             </>
           )}
-          <button 
+          <button
             className={styles.newBoardBtn}
             onClick={() => setShowNewBoard(true)}
           >
             + New Board
           </button>
+          <ThemeToggle />
+          {onShowShortcuts && (
+            <button
+              className={styles.headerBtn}
+              onClick={onShowShortcuts}
+              title="Keyboard shortcuts (?)"
+            >
+              Shortcuts
+            </button>
+          )}
+          {onShowTutorial && (
+            <button
+              className={styles.headerBtn}
+              onClick={onShowTutorial}
+              title="Show tutorial"
+            >
+              Tutorial
+            </button>
+          )}
         </div>
       </div>
 

@@ -11,19 +11,21 @@ interface AIAnalysisProps {
   onClose: () => void;
 }
 
-type AnalysisType = 'summary' | 'sentiment' | 'themes' | 'stakeholder' | 'actions' | 'gaps';
+type AnalysisType = 'comprehensive' | 'summary' | 'sentiment' | 'themes' | 'clusters' | 'stakeholder' | 'actions' | 'gaps';
 
 const ANALYSIS_OPTIONS: { type: AnalysisType; label: string; description: string }[] = [
+  { type: 'comprehensive', label: 'Full Report', description: 'Complete report with summary, actions, and decisions' },
   { type: 'summary', label: 'Executive Summary', description: 'Overview with key themes and recommendations' },
+  { type: 'clusters', label: 'Auto-Cluster', description: 'Group similar ideas and find connections' },
   { type: 'sentiment', label: 'Sentiment Analysis', description: 'Analyse tone, concerns, and opportunities' },
-  { type: 'themes', label: 'Theme Extraction', description: 'Cluster ideas and identify patterns' },
+  { type: 'themes', label: 'Theme Extraction', description: 'Identify patterns and themes' },
   { type: 'stakeholder', label: 'Stakeholder Summaries', description: 'Tailored insights for different audiences' },
   { type: 'actions', label: 'Action Items', description: 'Extract concrete next steps' },
   { type: 'gaps', label: 'Gap Analysis', description: 'Identify what is missing' },
 ];
 
 export function AIAnalysis({ board, notes, isOpen, onClose }: AIAnalysisProps) {
-  const [selectedType, setSelectedType] = useState<AnalysisType>('summary');
+  const [selectedType, setSelectedType] = useState<AnalysisType>('comprehensive');
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -142,15 +144,35 @@ export function AIAnalysis({ board, notes, isOpen, onClose }: AIAnalysisProps) {
               </div>
               <div className={styles.analysisText}>
                 {analysis.split('\n').map((line, i) => {
+                  // H1 headers
+                  if (line.startsWith('# ') && !line.startsWith('## ')) {
+                    return <h2 key={i} className={styles.heading1}>{line.substring(2)}</h2>;
+                  }
+                  // H2 headers
+                  if (line.startsWith('## ')) {
+                    return <h3 key={i} className={styles.heading2}>{line.substring(3)}</h3>;
+                  }
+                  // Bold text as subheading
                   if (line.startsWith('**') && line.endsWith('**')) {
                     return <h4 key={i} className={styles.heading}>{line.replace(/\*\*/g, '')}</h4>;
                   }
+                  // Italic text as section label
+                  if (line.startsWith('*') && line.endsWith('*') && !line.startsWith('**')) {
+                    return <h5 key={i} className={styles.sectionLabel}>{line.replace(/\*/g, '')}</h5>;
+                  }
+                  // Checkbox list items
+                  if (line.startsWith('- [ ] ')) {
+                    return <li key={i} className={styles.checkboxItem}>{line.substring(6)}</li>;
+                  }
+                  // Regular list items
                   if (line.startsWith('- ')) {
                     return <li key={i} className={styles.listItem}>{line.substring(2)}</li>;
                   }
+                  // Empty lines
                   if (line.trim() === '') {
                     return <br key={i} />;
                   }
+                  // Regular paragraphs
                   return <p key={i} className={styles.paragraph}>{line}</p>;
                 })}
               </div>

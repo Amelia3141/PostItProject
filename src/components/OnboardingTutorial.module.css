@@ -1,0 +1,228 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
+}
+
+.overlayBackground {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  pointer-events: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.highlight {
+  position: fixed;
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75);
+  background: transparent;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  z-index: 10000;
+}
+
+.tooltip {
+  position: fixed;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  z-index: 10001;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.stepIndicator {
+  font-size: 12px;
+  color: #667eea;
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 12px 0;
+}
+
+.description {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #555;
+  margin: 0 0 24px 0;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.skipBtn {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.skipBtn:hover {
+  color: #555;
+}
+
+.navButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.prevBtn {
+  padding: 10px 20px;
+  background: #f0f0f0;
+  border: none;
+  border-radius: 8px;
+  color: #555;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.prevBtn:hover {
+  background: #e5e5e5;
+}
+
+.nextBtn {
+  padding: 10px 24px;
+  background: #667eea;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.nextBtn:hover {
+  background: #5a6fd6;
+}
+
+.progress {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 20px;
+}
+
+.progressDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  transition: all 0.2s;
+}
+
+.progressDot.active {
+  background: #667eea;
+  transform: scale(1.2);
+}
+
+.progressDot.completed {
+  background: #a0b0ff;
+}
+
+/* Dark mode */
+:global(.dark) .tooltip {
+  background: #1e1e2e;
+}
+
+:global(.dark) .title {
+  color: #f0f0f0;
+}
+
+:global(.dark) .description {
+  color: #a0a0b0;
+}
+
+:global(.dark) .skipBtn {
+  color: #888;
+}
+
+:global(.dark) .skipBtn:hover {
+  color: #bbb;
+}
+
+:global(.dark) .prevBtn {
+  background: #2a2a3e;
+  color: #a0a0b0;
+}
+
+:global(.dark) .prevBtn:hover {
+  background: #3a3a5e;
+}
+
+:global(.dark) .progressDot {
+  background: #3a3a5e;
+}
+
+:global(.dark) .progressDot.completed {
+  background: #5a6aaa;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .tooltip {
+    width: calc(100vw - 32px);
+    padding: 20px;
+  }
+
+  .title {
+    font-size: 18px;
+  }
+
+  .description {
+    font-size: 13px;
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+    gap: 16px;
+  }
+
+  .navButtons {
+    width: 100%;
+  }
+
+  .nextBtn, .prevBtn {
+    flex: 1;
+  }
+
+  .skipBtn {
+    width: 100%;
+    text-align: center;
+  }
+}

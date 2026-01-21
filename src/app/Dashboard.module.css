@@ -31,6 +31,22 @@
   margin-bottom: 1rem;
 }
 
+.headerBtn {
+  padding: 6px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.headerBtn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
 .headerTitle {
   text-align: center;
 }
@@ -614,22 +630,32 @@
   top: 4px;
   right: 6px;
   cursor: grab;
-  color: var(--text-muted);
-  font-size: 12px;
-  letter-spacing: -2px;
-  opacity: 0.4;
-  padding: 2px 4px;
-  border-radius: 3px;
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: -1px;
+  padding: 1px 3px;
+  border-radius: 2px;
   user-select: none;
 }
 
 .dragHandle:hover {
-  opacity: 1;
-  background: var(--bg-secondary);
+  color: rgba(0, 0, 0, 0.85);
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .dragHandle:active {
   cursor: grabbing;
+}
+
+:global([data-theme="dark"]) .dragHandle {
+  color: rgba(255, 255, 255, 0.9) !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+:global([data-theme="dark"]) .dragHandle:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .card.pink {
@@ -777,6 +803,38 @@
 
 .exitFullscreenBtn:hover {
   background: var(--accent-hover);
+}
+
+/* Flow container with optional sidebar */
+.flowContainer {
+  display: flex;
+  height: calc(100vh - 400px);
+  min-height: 500px;
+  gap: 1rem;
+}
+
+.flowMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.networkAnalysisSidebar {
+  width: 360px;
+  flex-shrink: 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+  .flowContainer {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .networkAnalysisSidebar {
+    width: 100%;
+    max-height: 400px;
+  }
 }
 
 /* Modal */

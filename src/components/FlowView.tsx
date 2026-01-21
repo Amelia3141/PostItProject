@@ -15,6 +15,14 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Note, Connection, BoardColumn, BoardRow } from '@/types';
+import {
+  calculateDegreeCentrality,
+  calculateBetweennessCentrality,
+  calculateInDegreeCentrality,
+  calculateOutDegreeCentrality,
+} from '@/lib/networkAnalysis';
+
+export type VisualizationMode = 'none' | 'degree' | 'betweenness' | 'in-degree' | 'out-degree';
 
 interface ContextMenu {
   x: number;
@@ -30,6 +38,9 @@ interface FlowViewProps {
   onNoteClick: (note: Note) => void;
   onConnect: (sourceId: string, targetId: string) => void;
   onDeleteConnection?: (connectionId: string) => void;
+  highlightedNodeId?: string | null;
+  highlightedPath?: string[] | null;
+  visualizationMode?: VisualizationMode;
 }
 
 const colourToBackground: Record<string, string> = {
@@ -70,9 +81,50 @@ function NoteNode({ data }: { data: { label: string; note: Note; background: str
 
 const nodeTypes = { noteNode: NoteNode };
 
-export function FlowView({ notes, connections, columns, rows, onNoteClick, onConnect, onDeleteConnection }: FlowViewProps) {
+export function FlowView({
+  notes,
+  connections,
+  columns,
+  rows,
+  onNoteClick,
+  onConnect,
+  onDeleteConnection,
+  highlightedNodeId,
+  highlightedPath,
+  visualizationMode = 'none',
+}: FlowViewProps) {
   const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+
+  // Calculate centrality scores for visualization
+  const centralityScores = useCallback(() => {
+    if (visualizationMode === 'none' || connections.length === 0) return new Map<string, number>();
+
+    let results;
+    switch (visualizationMode) {
+      case 'degree':
+        results = calculateDegreeCentrality(notes, connections);
+        break;
+      case 'betweenness':
+        results = calculateBetweennessCentrality(notes, connections);
+        break;
+      case 'in-degree':
+        results = calculateInDegreeCentrality(notes, connections);
+        break;
+      case 'out-degree':
+        results = calculateOutDegreeCentrality(notes, connections);
+        break;
+      default:
+        return new Map<string, number>();
+    }
+
+    const scoreMap = new Map<string, number>();
+    const maxScore = results.length > 0 ? Math.max(...results.map(r => r.score)) : 1;
+    results.forEach(r => {
+      scoreMap.set(r.nodeId, maxScore > 0 ? r.score / maxScore : 0);
+    });
+    return scoreMap;
+  }, [notes, connections, visualizationMode]);
 
   const buildNodes = useCallback((): Node[] => {
     const nodes: Node[] = [];
@@ -130,6 +182,8 @@ export function FlowView({ notes, connections, columns, rows, onNoteClick, onCon
     });
 
     // Note nodes
+    const scores = centralityScores();
+
     notes.forEach((note) => {
       const colIndex = columns.findIndex(c => c.id === note.timeframe);
       const rowIndex = rows.findIndex(r => r.id === note.category);
@@ -148,8 +202,29 @@ export function FlowView({ notes, connections, columns, rows, onNoteClick, onCon
       const x = 180 + colIndex * colWidth + col * (nodeWidth + padding);
       const y = 70 + rowIndex * rowHeight + rowOffset * (nodeHeight + padding);
 
-      const bgColor = colourToBackground[row.colour] || '#f5f5f5';
-      const borderColor = colourToBorder[row.colour] || '#e0e0e0';
+      let bgColor = colourToBackground[row.colour] || '#f5f5f5';
+      let borderColor = colourToBorder[row.colour] || '#e0e0e0';
+
+      // Apply visualization mode coloring
+      const score = scores.get(note.id);
+      if (visualizationMode !== 'none' && score !== undefined) {
+        // Interpolate from blue (low) to red (high)
+        const r = Math.round(100 + score * 155);
+        const g = Math.round(180 - score * 80);
+        const b = Math.round(234 - score * 134);
+        bgColor = `rgb(${r}, ${g}, ${b})`;
+        borderColor = `rgb(${Math.max(0, r - 40)}, ${Math.max(0, g - 40)}, ${Math.max(0, b - 40)})`;
+      }
+
+      // Apply highlight styling
+      const isHighlighted = highlightedNodeId === note.id;
+      const isInPath = highlightedPath?.includes(note.id);
+      if (isHighlighted || isInPath) {
+        borderColor = '#f59e0b';
+        if (isHighlighted) {
+          bgColor = '#fef3c7';
+        }
+      }
 
       nodes.push({
         id: note.id,
@@ -165,36 +240,63 @@ export function FlowView({ notes, connections, columns, rows, onNoteClick, onCon
     });
 
     return nodes;
-  }, [notes, columns, rows]);
+  }, [notes, columns, rows, centralityScores, visualizationMode, highlightedNodeId, highlightedPath]);
 
   const buildEdges = useCallback((): Edge[] => {
-    return connections.map((conn) => ({
-      id: conn.id,
-      source: conn.sourceId,
-      target: conn.targetId,
-      style: {
-        stroke: selectedEdgeId === conn.id ? '#e53e3e' : '#667eea',
-        strokeWidth: selectedEdgeId === conn.id ? 3 : 2
-      },
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        color: selectedEdgeId === conn.id ? '#e53e3e' : '#667eea'
-      },
-      animated: false,
-      selected: selectedEdgeId === conn.id,
-    }));
-  }, [connections, selectedEdgeId]);
+    // Check if edge is part of highlighted path
+    const isEdgeInPath = (sourceId: string, targetId: string): boolean => {
+      if (!highlightedPath || highlightedPath.length < 2) return false;
+      for (let i = 0; i < highlightedPath.length - 1; i++) {
+        if (highlightedPath[i] === sourceId && highlightedPath[i + 1] === targetId) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    return connections.map((conn) => {
+      const isSelected = selectedEdgeId === conn.id;
+      const inPath = isEdgeInPath(conn.sourceId, conn.targetId);
+
+      let strokeColor = '#667eea';
+      let strokeWidth = 2;
+
+      if (isSelected) {
+        strokeColor = '#e53e3e';
+        strokeWidth = 3;
+      } else if (inPath) {
+        strokeColor = '#f59e0b';
+        strokeWidth = 3;
+      }
+
+      return {
+        id: conn.id,
+        source: conn.sourceId,
+        target: conn.targetId,
+        style: {
+          stroke: strokeColor,
+          strokeWidth,
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: strokeColor,
+        },
+        animated: inPath,
+        selected: isSelected,
+      };
+    });
+  }, [connections, selectedEdgeId, highlightedPath]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(buildNodes());
   const [edges, setEdges, onEdgesChange] = useEdgesState(buildEdges());
 
   useEffect(() => {
     setNodes(buildNodes());
-  }, [notes, buildNodes, setNodes]);
+  }, [notes, buildNodes, setNodes, visualizationMode, highlightedNodeId, highlightedPath]);
 
   useEffect(() => {
     setEdges(buildEdges());
-  }, [connections, buildEdges, setEdges, selectedEdgeId]);
+  }, [connections, buildEdges, setEdges, selectedEdgeId, highlightedPath]);
 
   const handleConnect = useCallback((params: FlowConnection) => {
     if (params.source && params.target) {

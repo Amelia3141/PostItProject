@@ -26,6 +26,61 @@ export async function POST(req: NextRequest) {
     let prompt = '';
 
     switch (type) {
+      case 'comprehensive':
+        prompt = `You are creating a comprehensive strategic report for a workshop board called "${boardName}".
+
+Board structure:
+${structureText}
+
+All notes from the workshop:
+${notesText}
+
+Create a complete executive report with the following sections:
+
+# Executive Summary
+Provide a compelling 4-5 sentence summary capturing the workshop's key outcomes, major themes, and strategic direction.
+
+# Key Findings
+**Top Themes** (4-6 major themes that emerged)
+- Theme name: Brief explanation and supporting evidence
+
+**Priority Areas** (based on vote counts and strategic importance)
+- List the highest priority items with rationale
+
+**Sentiment Overview**
+- Overall mood and tone of the workshop
+- Key concerns raised
+- Opportunities identified
+
+# Strategic Recommendations
+
+**Decisions Required**
+List 3-5 key decisions that need to be made based on the workshop outcomes, including:
+- The decision needed
+- Options to consider
+- Recommended course of action
+
+**Action Items**
+
+*Immediate (within 1 month)*
+- [ ] Specific action - Suggested owner
+
+*Short-term (1-3 months)*
+- [ ] Specific action - Suggested owner
+
+*Long-term (3-12 months)*
+- [ ] Specific action - Suggested owner
+
+# Gaps & Risks
+- What important perspectives or topics were missing?
+- What risks should be monitored?
+
+# Next Steps
+Provide 3-5 concrete next steps to move forward from this workshop.
+
+Format the report professionally. Use British English spelling.`;
+        break;
+
       case 'summary':
         prompt = `You are analysing a strategic workshop board called "${boardName}".
 
@@ -89,6 +144,44 @@ Provide:
 5. **Outlier Ideas** (unique perspectives that don't fit the main themes but are worth noting)
 
 Group related notes together and explain the connections. Use British English.`;
+        break;
+
+      case 'clusters':
+        prompt = `Analyse this workshop board "${boardName}" and cluster the notes into semantic groups based on similarity.
+
+All notes (with their IDs):
+${notes.map((n: any, i: number) => `[${i + 1}] "${n.text}"`).join('\n')}
+
+Your task is to:
+
+1. **Identify Clusters**: Group the notes into 3-7 distinct clusters based on semantic similarity (related concepts, themes, or topics).
+
+2. **For each cluster, provide**:
+   - **Cluster Name**: A short descriptive name (2-4 words)
+   - **Description**: One sentence explaining what unites these notes
+   - **Notes**: List the note numbers that belong to this cluster
+
+3. **Suggested Connections**: Identify pairs of notes that should be connected because:
+   - One leads to or causes the other
+   - They are complementary or dependent
+   - They represent a sequence or workflow
+
+   Format: Note X → Note Y (reason)
+
+4. **Outliers**: Any notes that don't fit well into the clusters
+
+Example output format:
+**Cluster: Data Infrastructure**
+Notes 1, 4, 7 - These notes all relate to data storage and processing capabilities.
+
+**Cluster: User Experience**
+Notes 2, 5, 8 - These notes focus on how end users interact with the system.
+
+**Suggested Connections:**
+- Note 1 → Note 4 (data storage enables processing)
+- Note 2 → Note 5 (user feedback drives UX improvements)
+
+Be specific and analytical. Use British English.`;
         break;
 
       case 'stakeholder':
@@ -181,7 +274,7 @@ Be constructive and specific. Use British English.`;
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 2048,
+      max_tokens: type === 'comprehensive' ? 4096 : 2048,
       messages: [{ role: 'user', content: prompt }],
     });
 

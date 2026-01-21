@@ -17,6 +17,8 @@ function AppContent() {
   const [currentBoard, setCurrentBoard] = useState<Board | null>(null);
   const [loading, setLoading] = useState(true);
   const [migrated, setMigrated] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   useEffect(() => {
     initFirebase();
@@ -111,8 +113,18 @@ function AppContent() {
         onSelectBoard={handleSelectBoard}
         onCreateBoard={handleCreateBoard}
         onUpdateBoard={handleUpdateBoard}
+        onShowShortcuts={() => setShowShortcuts(true)}
+        onShowTutorial={() => setShowTutorial(true)}
       />
-      {currentBoard && <Dashboard board={currentBoard} />}
+      {currentBoard && (
+        <Dashboard
+          board={currentBoard}
+          showShortcuts={showShortcuts}
+          showTutorial={showTutorial}
+          onCloseShortcuts={() => setShowShortcuts(false)}
+          onCloseTutorial={() => setShowTutorial(false)}
+        />
+      )}
     </main>
   );
 }

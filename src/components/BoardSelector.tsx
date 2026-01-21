@@ -150,6 +150,25 @@ export function BoardSelector({ currentBoardId, onSelectBoard, onCreateBoard, on
       <div className={styles.boardSelectorHeader}>
         <h3>Your Boards</h3>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <ThemeToggle />
+          {onShowShortcuts && (
+            <button
+              className={styles.headerBtn}
+              onClick={onShowShortcuts}
+              title="Keyboard shortcuts (?)"
+            >
+              Shortcuts
+            </button>
+          )}
+          {onShowTutorial && (
+            <button
+              className={styles.headerBtn}
+              onClick={onShowTutorial}
+              title="Show tutorial"
+            >
+              Tutorial
+            </button>
+          )}
           {currentBoard && (
             <>
               <button
@@ -172,25 +191,6 @@ export function BoardSelector({ currentBoardId, onSelectBoard, onCreateBoard, on
           >
             + New Board
           </button>
-          <ThemeToggle />
-          {onShowShortcuts && (
-            <button
-              className={styles.headerBtn}
-              onClick={onShowShortcuts}
-              title="Keyboard shortcuts (?)"
-            >
-              Shortcuts
-            </button>
-          )}
-          {onShowTutorial && (
-            <button
-              className={styles.headerBtn}
-              onClick={onShowTutorial}
-              title="Show tutorial"
-            >
-              Tutorial
-            </button>
-          )}
         </div>
       </div>
 

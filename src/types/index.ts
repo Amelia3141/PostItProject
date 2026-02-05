@@ -1,6 +1,6 @@
 export type Category = string;
 export type Timeframe = string;
-export type ViewMode = 'grid' | 'board' | 'flow';
+export type ViewMode = 'grid' | 'board' | 'flow' | 'roadmap';
 
 export interface BoardColumn {
   id: string;
@@ -57,6 +57,13 @@ export interface Note {
   lastEditedById?: string;
   comments?: Comment[];
   history?: NoteVersion[];
+  // Signal strength metadata (0-1 scale for visualization)
+  signalStrength?: number;
+  // Hover tooltip data
+  paperTrends?: string;
+  topInstitutions?: string[];
+  // Spanning - notes that span multiple columns
+  spanColumns?: string[]; // Array of column IDs this note spans
 }
 
 export interface NoteVersion {

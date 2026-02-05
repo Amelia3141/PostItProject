@@ -350,6 +350,60 @@ export function calculateDensity(nodeCount: number, edgeCount: number): number {
   return Math.round((edgeCount / maxEdges) * 10000) / 10000;
 }
 
+// Find strongly connected components using Tarjan's algorithm
+export function findStronglyConnectedComponents(connections: Connection[]): string[][] {
+  const { outgoing } = buildAdjacencyLists(connections);
+  const nodeIds = new Set<string>();
+  connections.forEach(c => {
+    nodeIds.add(c.sourceId);
+    nodeIds.add(c.targetId);
+  });
+
+  let index = 0;
+  const indices = new Map<string, number>();
+  const lowlinks = new Map<string, number>();
+  const onStack = new Map<string, boolean>();
+  const stack: string[] = [];
+  const sccs: string[][] = [];
+
+  function strongConnect(node: string) {
+    indices.set(node, index);
+    lowlinks.set(node, index);
+    index++;
+    stack.push(node);
+    onStack.set(node, true);
+
+    const neighbors = outgoing.get(node) || new Set();
+    neighbors.forEach(neighbor => {
+      if (!indices.has(neighbor)) {
+        strongConnect(neighbor);
+        lowlinks.set(node, Math.min(lowlinks.get(node)!, lowlinks.get(neighbor)!));
+      } else if (onStack.get(neighbor)) {
+        lowlinks.set(node, Math.min(lowlinks.get(node)!, indices.get(neighbor)!));
+      }
+    });
+
+    if (lowlinks.get(node) === indices.get(node)) {
+      const scc: string[] = [];
+      let w: string;
+      do {
+        w = stack.pop()!;
+        onStack.set(w, false);
+        scc.push(w);
+      } while (w !== node);
+      sccs.push(scc);
+    }
+  }
+
+  nodeIds.forEach(node => {
+    if (!indices.has(node)) {
+      strongConnect(node);
+    }
+  });
+
+  return sccs;
+}
+
 // Run full network analysis
 export function analyzeNetwork(notes: Note[], connections: Connection[]): NetworkAnalysis {
   const nodeIds = new Set<string>();
@@ -371,6 +425,6 @@ export function analyzeNetwork(notes: Note[], connections: Connection[]): Networ
     density: calculateDensity(nodeCount, edgeCount),
     nodeCount,
     edgeCount,
-    stronglyConnectedComponents: [], // Can be added later
+    stronglyConnectedComponents: findStronglyConnectedComponents(connections),
   };
 }

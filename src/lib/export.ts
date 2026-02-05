@@ -46,7 +46,7 @@ export async function exportToPDF(
   filename = 'ai-landscape-export',
   board?: Board,
   connections?: Connection[],
-  flowElement?: HTMLElement | null
+  _flowElement?: HTMLElement | null // Not used - we render our own flow view
 ) {
   const { jsPDF } = await import('jspdf');
   const { default: autoTable } = await import('jspdf-autotable');
@@ -144,136 +144,165 @@ export async function exportToPDF(
     });
   }
 
-  // Page 3: Network/Connections View
-  if (connections && connections.length > 0) {
+  // Page 3: Network/Flow View (always render if we have board structure)
+  if (board && notes.length > 0) {
     doc.addPage('landscape');
     doc.setFontSize(18);
     doc.setTextColor(26, 26, 46);
-    doc.text('Connections / Network View', 14, 20);
+    doc.text('Flow / Network View', 14, 20);
 
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
-    doc.text(`${connections.length} connections between ideas`, 14, 30);
+    const connCount = connections?.length || 0;
+    doc.text(`${notes.length} ideas${connCount > 0 ? ` • ${connCount} connections` : ''}`, 14, 28);
 
-    // Try to capture actual flow view if element is provided
-    if (flowElement) {
-      try {
-        const html2canvas = (await import('html2canvas')).default;
-        const canvas = await html2canvas(flowElement, {
-          backgroundColor: '#ffffff',
-          scale: 2,
-          useCORS: true,
-          logging: false,
-        });
-        const imgData = canvas.toDataURL('image/png');
-        // Calculate dimensions to fit in landscape page (297mm x 210mm)
-        const pageWidth = 277; // with margins
-        const pageHeight = 160; // leave space for title
-        const imgWidth = canvas.width;
-        const imgHeight = canvas.height;
-        const ratio = Math.min(pageWidth / imgWidth, pageHeight / imgHeight);
-        const finalWidth = imgWidth * ratio;
-        const finalHeight = imgHeight * ratio;
-        const x = (297 - finalWidth) / 2;
-        doc.addImage(imgData, 'PNG', x, 35, finalWidth, finalHeight);
-      } catch (err) {
-        console.error('Failed to capture flow view:', err);
-        // Fall back to simple visualization
-        renderSimpleNetworkView(doc, notes, connections);
-      }
-    } else {
-      // Fallback: simple network visualization
-      renderSimpleNetworkView(doc, notes, connections);
-    }
+    // Render grid-based flow view
+    renderFlowNetworkView(doc, notes, board, connections || []);
 
-    // List connections as table on next page if we have a flow image
-    if (flowElement) {
+    // Connection details table on next page
+    if (connections && connections.length > 0) {
       doc.addPage('landscape');
       doc.setFontSize(14);
       doc.setTextColor(26, 26, 46);
       doc.text('Connection Details', 14, 20);
-    }
 
-    doc.setFontSize(10);
-    doc.setTextColor(26, 26, 46);
-    autoTable(doc, {
-      startY: flowElement ? 30 : 175,
-      head: [['From', 'To']],
-      body: connections.slice(0, 20).map(conn => {
-        const source = notes.find(n => n.id === conn.sourceId);
-        const target = notes.find(n => n.id === conn.targetId);
-        return [
-          source?.text.substring(0, 50) + (source && source.text.length > 50 ? '...' : '') || 'Unknown',
-          target?.text.substring(0, 50) + (target && target.text.length > 50 ? '...' : '') || 'Unknown',
-        ];
-      }),
-      styles: { fontSize: 8, cellPadding: 3 },
-      headStyles: { fillColor: [102, 126, 234] },
-    });
+      autoTable(doc, {
+        startY: 30,
+        head: [['From', 'To']],
+        body: connections.slice(0, 25).map(conn => {
+          const source = notes.find(n => n.id === conn.sourceId);
+          const target = notes.find(n => n.id === conn.targetId);
+          return [
+            source?.text.substring(0, 60) + (source && source.text.length > 60 ? '...' : '') || 'Unknown',
+            target?.text.substring(0, 60) + (target && target.text.length > 60 ? '...' : '') || 'Unknown',
+          ];
+        }),
+        styles: { fontSize: 8, cellPadding: 3 },
+        headStyles: { fillColor: [102, 126, 234] },
+      });
+    }
   }
 
-  // Helper function for simple network visualization fallback
-  function renderSimpleNetworkView(doc: any, notes: Note[], connections: Connection[]) {
-    const connectedNotes = new Set<string>();
-    connections.forEach(c => {
-      connectedNotes.add(c.sourceId);
-      connectedNotes.add(c.targetId);
-    });
+  // Helper function to render flow view with grid layout
+  function renderFlowNetworkView(doc: any, notes: Note[], board: Board, connections: Connection[]) {
+    const cols = board.columns;
+    const rows = board.rows;
 
-    const relevantNotes = notes.filter(n => connectedNotes.has(n.id));
+    const startX = 50;
+    const startY = 40;
+    const colWidth = (270 - startX) / cols.length;
+    const rowHeight = 35;
+
+    const colorMap: Record<string, { bg: [number, number, number]; border: [number, number, number] }> = {
+      pink: { bg: [255, 245, 245], border: [254, 215, 215] },
+      blue: { bg: [240, 247, 255], border: [190, 227, 248] },
+      yellow: { bg: [255, 255, 240], border: [250, 240, 137] },
+      green: { bg: [240, 255, 244], border: [154, 230, 180] },
+      purple: { bg: [250, 245, 255], border: [214, 188, 250] },
+      orange: { bg: [255, 250, 240], border: [251, 211, 141] },
+    };
+
+    // Track node positions for connections
     const nodePositions: Record<string, { x: number; y: number }> = {};
+    const cellCounts: Record<string, number> = {};
 
-    // Position nodes in a circular layout
-    const centerX = 148;
-    const centerY = 115;
-    const radius = 70;
-
-    relevantNotes.forEach((note, i) => {
-      const angle = (i / relevantNotes.length) * 2 * Math.PI - Math.PI / 2;
-      nodePositions[note.id] = {
-        x: centerX + radius * Math.cos(angle),
-        y: centerY + radius * Math.sin(angle),
-      };
+    // Draw column headers
+    doc.setFontSize(8);
+    doc.setTextColor(255, 255, 255);
+    cols.forEach((col, i) => {
+      doc.setFillColor(26, 26, 46);
+      doc.roundedRect(startX + i * colWidth + 2, startY, colWidth - 4, 12, 2, 2, 'F');
+      doc.text(col.label, startX + i * colWidth + colWidth / 2, startY + 8, { align: 'center' });
     });
 
-    // Draw connections (lines)
-    doc.setDrawColor(102, 126, 234);
-    doc.setLineWidth(0.5);
-    connections.forEach((conn: Connection) => {
-      const source = nodePositions[conn.sourceId];
-      const target = nodePositions[conn.targetId];
-      if (source && target) {
-        doc.line(source.x, source.y, target.x, target.y);
-        // Draw arrowhead
-        const angle = Math.atan2(target.y - source.y, target.x - source.x);
-        const arrowSize = 3;
-        doc.line(
-          target.x - arrowSize * Math.cos(angle - Math.PI / 6),
-          target.y - arrowSize * Math.sin(angle - Math.PI / 6),
-          target.x,
-          target.y
-        );
-        doc.line(
-          target.x - arrowSize * Math.cos(angle + Math.PI / 6),
-          target.y - arrowSize * Math.sin(angle + Math.PI / 6),
-          target.x,
-          target.y
-        );
-      }
+    // Draw row labels
+    rows.forEach((row, rowIdx) => {
+      const y = startY + 15 + rowIdx * rowHeight;
+      const colors = colorMap[row.colour] || { bg: [245, 245, 245], border: [220, 220, 220] };
+      doc.setFillColor(colors.bg[0], colors.bg[1], colors.bg[2]);
+      doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
+      doc.roundedRect(5, y, 42, 28, 2, 2, 'FD');
+      doc.setTextColor(60, 60, 60);
+      doc.setFontSize(6);
+      const labelLines = doc.splitTextToSize(row.label, 38);
+      doc.text(labelLines, 26, y + 10 + (labelLines.length > 1 ? 0 : 4), { align: 'center' });
     });
 
-    // Draw nodes (circles with labels)
-    relevantNotes.forEach((note) => {
-      const pos = nodePositions[note.id];
-      if (pos) {
-        doc.setFillColor(102, 126, 234);
-        doc.circle(pos.x, pos.y, 4, 'F');
-        doc.setFontSize(6);
-        doc.setTextColor(50, 50, 50);
-        const label = note.text.substring(0, 20) + (note.text.length > 20 ? '...' : '');
-        doc.text(label, pos.x, pos.y + 8, { align: 'center' });
-      }
+    // Draw notes as nodes
+    const nodeWidth = 32;
+    const nodeHeight = 18;
+
+    notes.forEach((note) => {
+      const colIdx = cols.findIndex(c => c.id === note.timeframe);
+      const rowIdx = rows.findIndex(r => r.id === note.category);
+      if (colIdx === -1 || rowIdx === -1) return;
+
+      const row = rows[rowIdx];
+      const cellKey = `${note.category}-${note.timeframe}`;
+      const offset = cellCounts[cellKey] || 0;
+      cellCounts[cellKey] = offset + 1;
+
+      // Position within cell (2 columns of nodes)
+      const col = offset % 2;
+      const nodeRow = Math.floor(offset / 2);
+
+      const x = startX + colIdx * colWidth + 4 + col * (nodeWidth + 2);
+      const y = startY + 15 + rowIdx * rowHeight + 2 + nodeRow * (nodeHeight + 2);
+
+      // Store center position for connections
+      nodePositions[note.id] = { x: x + nodeWidth / 2, y: y + nodeHeight / 2 };
+
+      // Draw node
+      const colors = colorMap[row.colour] || { bg: [245, 245, 245], border: [220, 220, 220] };
+      doc.setFillColor(colors.bg[0], colors.bg[1], colors.bg[2]);
+      doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
+      doc.roundedRect(x, y, nodeWidth, nodeHeight, 1, 1, 'FD');
+
+      // Draw label (truncated)
+      doc.setFontSize(4);
+      doc.setTextColor(50, 50, 50);
+      const label = note.text.substring(0, 18) + (note.text.length > 18 ? '..' : '');
+      const labelLines = doc.splitTextToSize(label, nodeWidth - 2);
+      doc.text(labelLines.slice(0, 2), x + nodeWidth / 2, y + 5, { align: 'center' });
     });
+
+    // Draw connections with arrows
+    if (connections.length > 0) {
+      doc.setDrawColor(102, 126, 234);
+      doc.setLineWidth(0.3);
+
+      connections.forEach((conn) => {
+        const source = nodePositions[conn.sourceId];
+        const target = nodePositions[conn.targetId];
+        if (source && target) {
+          // Draw curved line
+          const midX = (source.x + target.x) / 2;
+          const midY = (source.y + target.y) / 2 - 5;
+
+          // Simple line for now
+          doc.line(source.x, source.y, target.x, target.y);
+
+          // Draw arrowhead
+          const angle = Math.atan2(target.y - source.y, target.x - source.x);
+          const arrowSize = 2;
+          const arrowX = target.x - 4 * Math.cos(angle);
+          const arrowY = target.y - 4 * Math.sin(angle);
+
+          doc.line(
+            arrowX,
+            arrowY,
+            arrowX - arrowSize * Math.cos(angle - Math.PI / 5),
+            arrowY - arrowSize * Math.sin(angle - Math.PI / 5)
+          );
+          doc.line(
+            arrowX,
+            arrowY,
+            arrowX - arrowSize * Math.cos(angle + Math.PI / 5),
+            arrowY - arrowSize * Math.sin(angle + Math.PI / 5)
+          );
+        }
+      });
+    }
   }
 
   // Page 4: Top Voted Ideas

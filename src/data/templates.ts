@@ -50,9 +50,9 @@ export const boardTemplates: BoardTemplate[] = [
     name: 'Eisenhower Matrix',
     description: 'Prioritise tasks by urgency and importance, track completed work',
     columns: [
-      { id: 'urgent', label: 'Urgent' },
-      { id: 'not-urgent', label: 'Not Urgent' },
-      { id: 'done', label: 'Done' },
+      { id: 'urgent', label: 'Urgent', colour: 'pink' },
+      { id: 'not-urgent', label: 'Not Urgent', colour: 'blue' },
+      { id: 'done', label: 'Done', colour: 'green' },
     ],
     rows: [
       { id: 'important', label: 'Important', colour: 'pink' },

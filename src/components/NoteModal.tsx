@@ -59,6 +59,11 @@ export function NoteModal({
   const [activeTab, setActiveTab] = useState<'edit' | 'history' | 'comments'>('edit');
   const [showMentions, setShowMentions] = useState(false);
   const [mentionFilter, setMentionFilter] = useState('');
+  // New fields for signal strength, hover data, and spanning
+  const [signalStrength, setSignalStrength] = useState<number>(0.5);
+  const [paperTrends, setPaperTrends] = useState('');
+  const [topInstitutions, setTopInstitutions] = useState('');
+  const [spanColumns, setSpanColumns] = useState<string[]>([]);
 
   useEffect(() => {
     if (note) {
@@ -69,6 +74,11 @@ export function NoteModal({
       setVotes(note.votes || 0);
       setComments(note.comments || []);
       setActiveTab('edit');
+      // New fields
+      setSignalStrength(note.signalStrength ?? 0.5);
+      setPaperTrends(note.paperTrends || '');
+      setTopInstitutions((note.topInstitutions || []).join(', '));
+      setSpanColumns(note.spanColumns || []);
     } else {
       setText('');
       setCategory(categories[0]?.id || '');
@@ -77,6 +87,11 @@ export function NoteModal({
       setVotes(0);
       setComments([]);
       setActiveTab('edit');
+      // Reset new fields
+      setSignalStrength(0.5);
+      setPaperTrends('');
+      setTopInstitutions('');
+      setSpanColumns([]);
     }
   }, [note, categories, timeframes]);
 
@@ -89,6 +104,11 @@ export function NoteModal({
       .map((t) => t.trim())
       .filter(Boolean);
 
+    const institutions = topInstitutions
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+
     await onSave({
       text,
       category: category as Category,
@@ -97,6 +117,10 @@ export function NoteModal({
       tags,
       connections: note?.connections || [],
       comments,
+      signalStrength,
+      paperTrends: paperTrends || undefined,
+      topInstitutions: institutions.length > 0 ? institutions : undefined,
+      spanColumns: spanColumns.length > 0 ? spanColumns : undefined,
     });
     onClose();
   };

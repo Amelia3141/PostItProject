@@ -152,7 +152,10 @@ export function votesDensity(notes: Note[], board: Board): DensityCell[] {
     counts.set(key, (counts.get(key) || 0) + 1);
   }
 
-  const maxVotes = Math.max(...Array.from(votes.values()), 1);
+  const allVotes = Array.from(votes.values());
+  const minVotes = allVotes.length > 0 ? Math.min(...allVotes) : 0;
+  const maxVotes = allVotes.length > 0 ? Math.max(...allVotes) : 0;
+  const voteRange = maxVotes - minVotes;
 
   const cells: DensityCell[] = [];
   for (const row of board.rows) {
@@ -160,12 +163,28 @@ export function votesDensity(notes: Note[], board: Board): DensityCell[] {
       const key = `${row.id}:${col.id}`;
       const voteCount = votes.get(key) || 0;
       const count = counts.get(key) || 0;
+
+      // Normalise votes to 0-1 range, handling edge cases
+      let normalised = 0;
+      if (count > 0) {
+        if (voteRange > 0) {
+          // Normalize based on vote range (handles negative votes too)
+          normalised = (voteCount - minVotes) / voteRange;
+        } else if (voteCount > 0) {
+          // All cells have same positive votes - show full intensity
+          normalised = 1;
+        } else if (voteCount === 0 && count > 0) {
+          // No votes but has notes - show light color based on note count
+          normalised = 0.2;
+        }
+      }
+
       cells.push({
         rowId: row.id,
         colId: col.id,
         count,
         votes: voteCount,
-        normalised: voteCount / maxVotes,
+        normalised,
       });
     }
   }

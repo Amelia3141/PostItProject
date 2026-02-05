@@ -150,6 +150,32 @@ export function BoardSelector({ currentBoardId, onSelectBoard, onCreateBoard, on
       <div className={styles.boardSelectorHeader}>
         <h3>Your Boards</h3>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <a
+            href="/landscape"
+            className={styles.landscapeBtn}
+            title="View Interactive AI Landscape"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.4rem 0.75rem',
+              backgroundColor: '#6366f1',
+              color: 'white',
+              borderRadius: '6px',
+              fontSize: '0.8rem',
+              fontWeight: 500,
+              textDecoration: 'none',
+              transition: 'background-color 0.2s',
+            }}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#4f46e5'}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#6366f1'}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 3v18h18"/>
+              <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+            </svg>
+            AI Landscape
+          </a>
           <ThemeToggle />
           {onShowShortcuts && (
             <button

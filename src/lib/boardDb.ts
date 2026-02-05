@@ -5,15 +5,28 @@ import { v4 as uuidv4 } from 'uuid';
 
 const BOARDS_PATH = 'boards';
 
-// Helper to remove undefined values (Firebase doesn't accept them)
-function cleanObject<T extends Record<string, any>>(obj: T): T {
-  const cleaned = { ...obj };
-  Object.keys(cleaned).forEach(key => {
-    if (cleaned[key] === undefined) {
-      delete cleaned[key];
-    }
-  });
-  return cleaned;
+// Helper to remove undefined values recursively (Firebase doesn't accept them at any level)
+function cleanObject<T>(obj: T): T {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => cleanObject(item)) as T;
+  }
+
+  if (typeof obj === 'object') {
+    const cleaned: Record<string, any> = {};
+    Object.keys(obj as Record<string, any>).forEach(key => {
+      const value = (obj as Record<string, any>)[key];
+      if (value !== undefined) {
+        cleaned[key] = cleanObject(value);
+      }
+    });
+    return cleaned as T;
+  }
+
+  return obj;
 }
 
 export async function createBoard(data: {

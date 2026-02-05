@@ -12,7 +12,7 @@ import { PresenceAvatars } from './PresenceAvatars';
 import { ActivityFeed } from './ActivityFeed';
 import { AIAnalysis } from './AIAnalysis';
 import { ToastProvider, useToast } from './Toast';
-import { ShortcutsModal } from './KeyboardShortcuts';
+import { ShortcutsModal, useKeyboardShortcuts } from './KeyboardShortcuts';
 import { exportToJSON, exportToCSV, exportToPDF, exportToPPTX, exportToAIPDF, importFromJSON } from '@/lib/export';
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { DraggableNoteCard } from './DraggableNoteCard';
@@ -20,6 +20,7 @@ import { DroppableCell } from './DroppableCell';
 import { FlowView } from './FlowView';
 import NetworkAnalysisPanel, { VisualizationMode } from './NetworkAnalysisPanel';
 import { OnboardingTutorial } from './OnboardingTutorial';
+import { AILandscapeRoadmap } from './AILandscapeRoadmap';
 import { calculateDensity, getColor, getCellDensity, getGapSummary, DensityMethod, ColorScheme, DensityCell } from '@/lib/density';
 import styles from '@/app/Dashboard.module.css';
 
@@ -68,6 +69,8 @@ export function Dashboard({ board, readOnly = false, showShortcuts = false, show
   const [densityMethod, setDensityMethod] = useState<DensityMethod>('grid');
   const [colorScheme, setColorScheme] = useState<ColorScheme>('heat');
   const [showDensitySettings, setShowDensitySettings] = useState(false);
+  const [aiReportLoading, setAiReportLoading] = useState(false);
+  const [showFlowArrows, setShowFlowArrows] = useState(true);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const flowViewRef = useRef<HTMLDivElement>(null);
   const [filters, setFilters] = useState<FilterState>({
@@ -80,6 +83,24 @@ export function Dashboard({ board, readOnly = false, showShortcuts = false, show
 
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Keyboard shortcuts
+  const { showShortcuts: shortcutsOpen, setShowShortcuts } = useKeyboardShortcuts({
+    onAddNote: () => setIsModalOpen(true),
+    onToggleView: (view) => setViewMode(view),
+    onUndo: () => undo(),
+    onSearch: () => searchInputRef.current?.focus(),
+    onExport: () => {}, // Could show export dropdown
+    onAIAnalysis: () => setShowAIAnalysis(true),
+    canUndo,
+  });
+
+  // Combine external showShortcuts prop with internal hook state
+  const isShortcutsOpen = showShortcuts || shortcutsOpen;
+  const handleCloseShortcuts = () => {
+    setShowShortcuts(false);
+    onCloseShortcuts?.();
+  };
 
   // Import handler
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -289,6 +310,7 @@ export function Dashboard({ board, readOnly = false, showShortcuts = false, show
         highlightedNodeId={highlightedNodeId}
         highlightedPath={highlightedPath}
         visualizationMode={visualizationMode}
+        showArrows={showFlowArrows}
       />
     </div>
   );
@@ -318,11 +340,13 @@ export function Dashboard({ board, readOnly = false, showShortcuts = false, show
       </header>
 
       {!readOnly && (
-        <QuickAddNote
-          onAdd={handleQuickAdd}
-          categories={board.rows.map(r => ({ id: r.id, label: r.label }))}
-          timeframes={board.columns.map(c => ({ id: c.id, label: c.label }))}
-        />
+        <div data-tutorial="quick-add">
+          <QuickAddNote
+            onAdd={handleQuickAdd}
+            categories={board.rows.map(r => ({ id: r.id, label: r.label }))}
+            timeframes={board.columns.map(c => ({ id: c.id, label: c.label }))}
+          />
+        </div>
       )}
 
       <ActivityFeed boardId={board.id} />
@@ -343,7 +367,7 @@ export function Dashboard({ board, readOnly = false, showShortcuts = false, show
       </div>
 
       {stats.topVoted.length > 0 && (
-        <div className={styles.topVoted}>
+        <div className={styles.topVoted} data-tutorial="top-voted">
           <div className={styles.topVotedHeader}>
             <h2>Top Voted Ideas</h2>
           </div>
@@ -376,193 +400,215 @@ export function Dashboard({ board, readOnly = false, showShortcuts = false, show
       )}
 
       <div className={styles.controls}>
-        <div className={styles.viewToggle}>
-          <button
-            className={`${styles.viewBtn} ${viewMode === 'grid' ? styles.active : ''}`}
-            onClick={() => setViewMode('grid')}
-          >
-            Grid
-          </button>
-          <button
-            className={`${styles.viewBtn} ${viewMode === 'board' ? styles.active : ''}`}
-            onClick={() => setViewMode('board')}
-          >
-            Board
-          </button>
-          <button
-            className={`${styles.viewBtn} ${viewMode === 'flow' ? styles.active : ''}`}
-            onClick={() => setViewMode('flow')}
-          >
-            Flow
-          </button>
+        {/* Primary row - View mode left, Add + AI Analysis right */}
+        <div className={styles.controlsPrimary}>
+          <div className={styles.controlsPrimaryLeft}>
+            <div className={styles.viewToggle} data-tutorial="view-toggle">
+              <button
+                className={`${styles.viewBtn} ${viewMode === 'grid' ? styles.active : ''}`}
+                onClick={() => setViewMode('grid')}
+              >
+                Grid
+              </button>
+              <button
+                className={`${styles.viewBtn} ${viewMode === 'board' ? styles.active : ''}`}
+                onClick={() => setViewMode('board')}
+              >
+                Board
+              </button>
+              <button
+                className={`${styles.viewBtn} ${viewMode === 'flow' ? styles.active : ''}`}
+                onClick={() => setViewMode('flow')}
+              >
+                Flow
+              </button>
+              <button
+                className={`${styles.viewBtn} ${viewMode === 'roadmap' ? styles.active : ''}`}
+                onClick={() => setViewMode('roadmap')}
+              >
+                Roadmap
+              </button>
+            </div>
+
+            {/* Visualization toggles - next to view mode */}
+            <div className={styles.vizToggles}>
+              {viewMode === 'board' && (
+                <button
+                  className={`${styles.vizToggleBtn} ${showHeatmap ? styles.active : ''}`}
+                  onClick={() => setShowHeatmap(!showHeatmap)}
+                  title="Toggle heatmap visualization"
+                >
+                  Heatmap
+                </button>
+              )}
+              {viewMode === 'flow' && (
+                <>
+                  <button
+                    className={`${styles.vizToggleBtn} ${showNetworkAnalysis ? styles.active : ''}`}
+                    onClick={() => setShowNetworkAnalysis(!showNetworkAnalysis)}
+                    title="Network Analysis"
+                  >
+                    Network
+                  </button>
+                  <button
+                    className={`${styles.vizToggleBtn} ${!showFlowArrows ? styles.active : ''}`}
+                    onClick={() => setShowFlowArrows(!showFlowArrows)}
+                    title="Toggle connection arrows"
+                  >
+                    {showFlowArrows ? 'Hide Arrows' : 'Show Arrows'}
+                  </button>
+                </>
+              )}
+              {showHeatmap && viewMode === 'board' && (
+                <div className={styles.heatmapControls}>
+                  <select
+                    className={styles.sortSelect}
+                    value={densityMethod}
+                    onChange={(e) => setDensityMethod(e.target.value as DensityMethod)}
+                    title="Density calculation method"
+                  >
+                    <option value="grid">Count</option>
+                    <option value="kde">KDE</option>
+                    <option value="structured">Structured</option>
+                    <option value="votes">Votes</option>
+                    <option value="gaps">Gaps</option>
+                  </select>
+                  <select
+                    className={styles.sortSelect}
+                    value={colorScheme}
+                    onChange={(e) => setColorScheme(e.target.value as ColorScheme)}
+                    title="Color scheme"
+                  >
+                    <option value="heat">Heat</option>
+                    <option value="viridis">Viridis</option>
+                    <option value="blues">Blues</option>
+                    <option value="greens">Greens</option>
+                    <option value="diverging">Diverging</option>
+                  </select>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className={styles.controlsPrimaryRight}>
+            {!readOnly && (
+              <button className={styles.primaryAddBtn} onClick={handleAddNote}>
+                + Add Note
+              </button>
+            )}
+            <button
+              className={styles.aiBtn}
+              onClick={() => setShowAIAnalysis(true)}
+              data-tutorial="ai-analysis"
+            >
+              AI Analysis
+            </button>
+          </div>
         </div>
 
-        {viewMode === 'board' && (
-          <div className={styles.heatmapControls}>
-            <button
-              className={`${styles.filterBtn} ${showHeatmap ? styles.active : ''}`}
-              onClick={() => setShowHeatmap(!showHeatmap)}
-              title="Toggle heatmap visualization"
-            >
-              {showHeatmap ? 'Heatmap On' : 'Heatmap'}
-            </button>
-            {showHeatmap && (
-              <>
-                <select
-                  className={styles.sortSelect}
-                  value={densityMethod}
-                  onChange={(e) => setDensityMethod(e.target.value as DensityMethod)}
-                  title="Density calculation method"
-                >
-                  <option value="grid">Grid Count</option>
-                  <option value="kde">KDE (Smooth)</option>
-                  <option value="structured">Structured</option>
-                  <option value="votes">Vote Weighted</option>
-                  <option value="gaps">Gap Analysis</option>
-                </select>
-                <select
-                  className={styles.sortSelect}
-                  value={colorScheme}
-                  onChange={(e) => setColorScheme(e.target.value as ColorScheme)}
-                  title="Color scheme"
-                >
-                  <option value="heat">Heat (G→Y→R)</option>
-                  <option value="viridis">Viridis</option>
-                  <option value="blues">Blues</option>
-                  <option value="greens">Greens</option>
-                  <option value="diverging">Diverging</option>
-                </select>
-              </>
-            )}
-          </div>
-        )}
+        {/* Secondary row - Search, filters, exports */}
+        <div className={styles.controlsSecondary}>
+          <input
+            type="text"
+            placeholder="Search..."
+            className={styles.searchInput}
+            value={filters.searchQuery}
+            onChange={(e) => setFilters((f) => ({ ...f, searchQuery: e.target.value }))}
+          />
 
-        <input
-          type="text"
-          placeholder="Search ideas..."
-          className={styles.searchInput}
-          value={filters.searchQuery}
-          onChange={(e) => setFilters((f) => ({ ...f, searchQuery: e.target.value }))}
-        />
-
-        <select 
-          className={styles.sortSelect}
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as SortOption)}
-        >
-          <option value="newest">Newest First</option>
-          <option value="oldest">Oldest First</option>
-          <option value="mostVotes">Most Votes</option>
-          <option value="leastVotes">Least Votes</option>
-          <option value="alphabetical">A-Z</option>
-        </select>
-
-        <select
-          className={styles.sortSelect}
-          value={minVotes}
-          onChange={(e) => setMinVotes(Number(e.target.value))}
-        >
-          <option value={0}>All Votes</option>
-          <option value={1}>1+ Votes</option>
-          <option value={2}>2+ Votes</option>
-          <option value={3}>3+ Votes</option>
-          <option value={5}>5+ Votes</option>
-        </select>
-
-        {authors.length > 0 && (
           <select
             className={styles.sortSelect}
-            value={filters.authorId || ''}
-            onChange={(e) => setFilters((f) => ({ ...f, authorId: e.target.value || undefined }))}
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
           >
-            <option value="">All Authors</option>
-            {authors.map((author) => (
-              <option key={author.id} value={author.id}>
-                {author.name}
-              </option>
-            ))}
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="mostVotes">Most Votes</option>
+            <option value="leastVotes">Least Votes</option>
+            <option value="alphabetical">A-Z</option>
           </select>
-        )}
 
-        {!readOnly && (
-          <>
-            <button 
-              className={styles.undoBtn} 
+          <select
+            className={styles.sortSelect}
+            value={minVotes}
+            onChange={(e) => setMinVotes(Number(e.target.value))}
+          >
+            <option value={0}>All</option>
+            <option value={1}>1+</option>
+            <option value={2}>2+</option>
+            <option value={3}>3+</option>
+            <option value={5}>5+</option>
+          </select>
+
+          {authors.length > 0 && (
+            <select
+              className={styles.sortSelect}
+              value={filters.authorId || ''}
+              onChange={(e) => setFilters((f) => ({ ...f, authorId: e.target.value || undefined }))}
+            >
+              <option value="">All Authors</option>
+              {authors.map((author) => (
+                <option key={author.id} value={author.id}>
+                  {author.name}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {!readOnly && (
+            <button
+              className={styles.undoBtn}
               onClick={undo}
               disabled={!canUndo}
             >
               Undo
             </button>
-
-            <button className={styles.addNoteBtn} onClick={handleAddNote}>
-              + Add Note
-            </button>
-          </>
-        )}
-        
-        <button
-          className={styles.aiBtn}
-          onClick={() => setShowAIAnalysis(true)}
-        >
-          AI Analysis
-        </button>
-
-        <div className={styles.exportGroup}>
-          <button className={styles.filterBtn} onClick={() => exportToJSON(notes)}>JSON</button>
-          <button className={styles.filterBtn} onClick={() => exportToCSV(notes)}>CSV</button>
-          <button className={styles.filterBtn} onClick={() => exportToPDF(notes, board.name, board, connections, flowViewRef.current)}>PDF</button>
-          <button className={styles.filterBtn} onClick={() => exportToPPTX(notes, board)}>PPTX</button>
-          <button
-            className={styles.aiBtn}
-            onClick={async () => {
-              try {
-                await exportToAIPDF(notes, board, connections, flowViewRef.current);
-              } catch (err: any) {
-                alert('AI PDF export failed: ' + err.message);
-              }
-            }}
-            title="Generate AI-enhanced strategic report"
-          >
-            AI Report
-          </button>
-          {!readOnly && (
-            <>
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleImport}
-                style={{ display: 'none' }}
-                id="import-json"
-              />
-              <label htmlFor="import-json" className={styles.filterBtn} style={{ cursor: 'pointer' }}>
-                Import
-              </label>
-            </>
           )}
-        </div>
 
-        {viewMode === 'flow' && (
-          <>
+          <div className={styles.exportGroup} data-tutorial="export">
+            <button className={styles.filterBtn} onClick={() => exportToJSON(notes)}>JSON</button>
+            <button className={styles.filterBtn} onClick={() => exportToCSV(notes)}>CSV</button>
+            <button className={styles.filterBtn} onClick={() => exportToPDF(notes, board.name, board, connections, flowViewRef.current)}>PDF</button>
+            <button className={styles.filterBtn} onClick={() => exportToPPTX(notes, board)}>PPTX</button>
+            {!readOnly && (
+              <>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleImport}
+                  style={{ display: 'none' }}
+                  id="import-json"
+                />
+                <label htmlFor="import-json" className={styles.filterBtn} style={{ cursor: 'pointer' }}>
+                  Import
+                </label>
+              </>
+            )}
             <button
-              className={`${styles.filterBtn} ${showNetworkAnalysis ? styles.active : ''}`}
-              onClick={() => setShowNetworkAnalysis(!showNetworkAnalysis)}
-              title="Network Analysis"
+              className={styles.aiBtn}
+              disabled={aiReportLoading}
+              onClick={async () => {
+                if (aiReportLoading) return;
+                setAiReportLoading(true);
+                try {
+                  await exportToAIPDF(notes, board, connections, flowViewRef.current);
+                } catch (err: any) {
+                  alert('AI report failed: ' + err.message);
+                } finally {
+                  setAiReportLoading(false);
+                }
+              }}
+              title="Generate AI-enhanced strategic report"
             >
-              Network
+              {aiReportLoading ? 'Generating...' : 'AI Report'}
             </button>
-            <button
-              className={styles.filterBtn}
-              onClick={() => setIsFullscreen(!isFullscreen)}
-            >
-              {isFullscreen ? 'Exit' : 'Fullscreen'}
-            </button>
-          </>
-        )}
+          </div>
+        </div>
       </div>
 
       {viewMode === 'board' && (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <div className={`${styles.board} ${styles.fadeIn}`}>
+          <div className={`${styles.board} ${styles.fadeIn}`} data-tutorial="board">
             <div className={styles.boardHeader} style={{ gridTemplateColumns: `180px repeat(${board.columns.length}, 1fr)` }}>
               <div className={styles.boardRowLabel}></div>
               {board.columns.map((col) => (
@@ -642,6 +688,12 @@ export function Dashboard({ board, readOnly = false, showShortcuts = false, show
         ) : (
           <div className={styles.flowContainer}>
             <div className={styles.flowMain}>
+              <button
+                className={styles.enterFullscreenBtn}
+                onClick={() => setIsFullscreen(true)}
+              >
+                Fullscreen
+              </button>
               {flowViewContent}
             </div>
             {showNetworkAnalysis && (
@@ -657,6 +709,18 @@ export function Dashboard({ board, readOnly = false, showShortcuts = false, show
             )}
           </div>
         )
+      )}
+
+      {viewMode === 'roadmap' && (
+        <AILandscapeRoadmap
+          notes={processedNotes}
+          connections={connections}
+          columns={board.columns}
+          rows={board.rows}
+          title={board.name}
+          subtitle={board.description}
+          onNoteClick={handleNoteClick}
+        />
       )}
 
       <NoteModal
@@ -685,8 +749,8 @@ export function Dashboard({ board, readOnly = false, showShortcuts = false, show
       />
 
       <ShortcutsModal
-        isOpen={showShortcuts}
-        onClose={() => onCloseShortcuts?.()}
+        isOpen={isShortcutsOpen}
+        onClose={handleCloseShortcuts}
       />
 
       {bulkMode && selectedNotes.size > 0 && (

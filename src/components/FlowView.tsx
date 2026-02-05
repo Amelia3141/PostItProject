@@ -178,8 +178,8 @@ function NoteNode({ data }: { data: { label: string; fullText: string; note: Not
     };
   }, [hoverTimer, tooltipTimer]);
 
-  const baseWidth = data.isSpanning && data.spanWidth ? data.spanWidth : 150;
-  const expandedWidth = data.isSpanning && data.spanWidth ? data.spanWidth + 70 : 220;
+  const baseWidth = data.isSpanning && data.spanWidth ? data.spanWidth : 180;
+  const expandedWidth = data.isSpanning && data.spanWidth ? data.spanWidth + 70 : 260;
 
   return (
     <div
@@ -331,9 +331,9 @@ export function FlowView({
     const nodes: Node[] = [];
     const cellCounts: Record<string, number> = {};
 
-    const colWidth = 320;
+    const colWidth = 380;
     const rowHeight = 280;
-    const nodeWidth = 150;
+    const nodeWidth = 180;
     const nodeHeight = 70;
     const padding = 15;
 
@@ -457,8 +457,8 @@ export function FlowView({
             type: 'noteNode',
             position: { x, y },
             data: {
-              label: note.text.length > 50 ? note.text.substring(0, 50) + '...' : note.text,
-              fullText: note.text.length > 150 ? note.text.substring(0, 150) + '...' : note.text,
+              label: note.text.length > 80 ? note.text.substring(0, 80) + '...' : note.text,
+              fullText: note.text.length > 200 ? note.text.substring(0, 200) + '...' : note.text,
               note,
               background: bgColor,
               border: borderColor,
@@ -520,8 +520,8 @@ export function FlowView({
         type: 'noteNode',
         position: { x, y },
         data: {
-          label: note.text.length > 35 ? note.text.substring(0, 35) + '...' : note.text,
-          fullText: note.text.length > 100 ? note.text.substring(0, 100) + '...' : note.text,
+          label: note.text.length > 60 ? note.text.substring(0, 60) + '...' : note.text,
+          fullText: note.text.length > 150 ? note.text.substring(0, 150) + '...' : note.text,
           note,
           background: bgColor,
           border: borderColor,

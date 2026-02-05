@@ -46,10 +46,12 @@ export async function exportToPDF(
   filename = 'ai-landscape-export',
   board?: Board,
   connections?: Connection[],
-  _flowElement?: HTMLElement | null // Not used - we render our own flow view
+  flowElement?: HTMLElement | null, // Used for capturing actual flow view screenshot
+  boardElement?: HTMLElement | null // Used for capturing actual board view screenshot
 ) {
   const { jsPDF } = await import('jspdf');
   const { default: autoTable } = await import('jspdf-autotable');
+  const { default: html2canvas } = await import('html2canvas');
   const doc = new jsPDF('landscape');
 
   const boardName = board?.name || 'AI Landscape';
@@ -77,74 +79,112 @@ export async function exportToPDF(
   doc.setTextColor(80, 80, 80);
   doc.text(`Total Votes: ${totalVotes} • Contributors: ${contributors}`, 148, 115, { align: 'center' });
 
-  // Page 2: Board Matrix View
+  // Page 2: Board Matrix View (capture actual screenshot if available)
   if (board) {
     doc.addPage('landscape');
     doc.setFontSize(18);
     doc.setTextColor(26, 26, 46);
     doc.text('Board Overview', 14, 20);
 
-    const cols = board.columns;
-    const rows = board.rows;
-    const startX = 45;
-    const startY = 35;
-    const cellWidth = (280 - startX) / cols.length;
-    const cellHeight = 30;
+    // Try to capture actual board view screenshot
+    let boardScreenshotAdded = false;
+    if (boardElement) {
+      try {
+        const canvas = await html2canvas(boardElement, {
+          scale: 2,
+          backgroundColor: '#ffffff',
+          logging: false,
+          useCORS: true,
+        });
+        const imgData = canvas.toDataURL('image/png');
 
-    // Column headers
-    doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
-    cols.forEach((col, i) => {
-      doc.setFillColor(26, 26, 46);
-      doc.rect(startX + i * cellWidth, startY, cellWidth, 12, 'F');
-      doc.text(col.label, startX + i * cellWidth + cellWidth/2, startY + 8, { align: 'center' });
-    });
+        // Calculate dimensions to fit the page
+        const pageWidth = 297; // landscape A4
+        const pageHeight = 210;
+        const maxWidth = pageWidth - 28; // margins
+        const maxHeight = pageHeight - 40; // space for header
 
-    // Row labels and cells
-    const colorMap: Record<string, [number, number, number]> = {
-      pink: [255, 245, 245],
-      blue: [240, 247, 255],
-      yellow: [255, 255, 240],
-      green: [240, 255, 244],
-      purple: [250, 245, 255],
-      orange: [255, 250, 240],
-    };
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
 
-    rows.forEach((row, rowIdx) => {
-      const y = startY + 12 + rowIdx * cellHeight;
+        const finalWidth = imgWidth * ratio;
+        const finalHeight = imgHeight * ratio;
 
-      // Row label
-      const bgColor = colorMap[row.colour] || [245, 245, 245];
-      doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
-      doc.rect(5, y, 38, cellHeight, 'F');
-      doc.setTextColor(60, 60, 60);
-      doc.setFontSize(7);
-      const labelLines = doc.splitTextToSize(row.label, 35);
-      doc.text(labelLines, 24, y + cellHeight/2 - (labelLines.length - 1) * 2, { align: 'center' });
+        // Center the image
+        const xOffset = (pageWidth - finalWidth) / 2;
 
-      // Cells with note counts
-      cols.forEach((col, colIdx) => {
-        const x = startX + colIdx * cellWidth;
-        const cellNotes = notes.filter(n => n.category === row.id && n.timeframe === col.id);
+        doc.addImage(imgData, 'PNG', xOffset, 30, finalWidth, finalHeight);
+        boardScreenshotAdded = true;
+      } catch (err) {
+        console.warn('Could not capture board view screenshot:', err);
+      }
+    }
 
-        doc.setFillColor(250, 250, 250);
-        doc.rect(x, y, cellWidth, cellHeight, 'F');
-        doc.setDrawColor(230, 230, 230);
-        doc.rect(x, y, cellWidth, cellHeight, 'S');
+    // Fallback: render simplified board view if screenshot failed
+    if (!boardScreenshotAdded) {
+      const cols = board.columns;
+      const rows = board.rows;
+      const startX = 45;
+      const startY = 35;
+      const cellWidth = (280 - startX) / cols.length;
+      const cellHeight = 30;
 
-        if (cellNotes.length > 0) {
-          doc.setTextColor(102, 126, 234);
-          doc.setFontSize(12);
-          doc.text(String(cellNotes.length), x + cellWidth/2, y + cellHeight/2 + 2, { align: 'center' });
-          doc.setFontSize(6);
-          doc.setTextColor(150, 150, 150);
-          doc.text('notes', x + cellWidth/2, y + cellHeight/2 + 8, { align: 'center' });
-        }
+      // Column headers
+      doc.setFontSize(8);
+      doc.setTextColor(255, 255, 255);
+      cols.forEach((col, i) => {
+        doc.setFillColor(26, 26, 46);
+        doc.rect(startX + i * cellWidth, startY, cellWidth, 12, 'F');
+        doc.text(col.label, startX + i * cellWidth + cellWidth/2, startY + 8, { align: 'center' });
       });
-    });
+
+      // Row labels and cells
+      const colorMap: Record<string, [number, number, number]> = {
+        pink: [255, 245, 245],
+        blue: [240, 247, 255],
+        yellow: [255, 255, 240],
+        green: [240, 255, 244],
+        purple: [250, 245, 255],
+        orange: [255, 250, 240],
+      };
+
+      rows.forEach((row, rowIdx) => {
+        const y = startY + 12 + rowIdx * cellHeight;
+
+        // Row label
+        const bgColor = colorMap[row.colour] || [245, 245, 245];
+        doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+        doc.rect(5, y, 38, cellHeight, 'F');
+        doc.setTextColor(60, 60, 60);
+        doc.setFontSize(7);
+        const labelLines = doc.splitTextToSize(row.label, 35);
+        doc.text(labelLines, 24, y + cellHeight/2 - (labelLines.length - 1) * 2, { align: 'center' });
+
+        // Cells with note counts
+        cols.forEach((col, colIdx) => {
+          const x = startX + colIdx * cellWidth;
+          const cellNotes = notes.filter(n => n.category === row.id && n.timeframe === col.id);
+
+          doc.setFillColor(250, 250, 250);
+          doc.rect(x, y, cellWidth, cellHeight, 'F');
+          doc.setDrawColor(230, 230, 230);
+          doc.rect(x, y, cellWidth, cellHeight, 'S');
+
+          if (cellNotes.length > 0) {
+            doc.setTextColor(102, 126, 234);
+            doc.setFontSize(12);
+            doc.text(String(cellNotes.length), x + cellWidth/2, y + cellHeight/2 + 2, { align: 'center' });
+            doc.setFontSize(6);
+            doc.setTextColor(150, 150, 150);
+            doc.text('notes', x + cellWidth/2, y + cellHeight/2 + 8, { align: 'center' });
+          }
+        });
+      });
+    }
   }
 
-  // Page 3: Network/Flow View (always render if we have board structure)
+  // Page 3: Network/Flow View (capture actual screenshot if available)
   if (board && notes.length > 0) {
     doc.addPage('landscape');
     doc.setFontSize(18);
@@ -156,8 +196,45 @@ export async function exportToPDF(
     const connCount = connections?.length || 0;
     doc.text(`${notes.length} ideas${connCount > 0 ? ` • ${connCount} connections` : ''}`, 14, 28);
 
-    // Render grid-based flow view
-    renderFlowNetworkView(doc, notes, board, connections || []);
+    // Try to capture actual flow view screenshot
+    let flowScreenshotAdded = false;
+    if (flowElement) {
+      try {
+        const canvas = await html2canvas(flowElement, {
+          scale: 2,
+          backgroundColor: '#ffffff',
+          logging: false,
+          useCORS: true,
+        });
+        const imgData = canvas.toDataURL('image/png');
+
+        // Calculate dimensions to fit the page
+        const pageWidth = 297; // landscape A4
+        const pageHeight = 210;
+        const maxWidth = pageWidth - 28; // margins
+        const maxHeight = pageHeight - 45; // space for header
+
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
+
+        const finalWidth = imgWidth * ratio;
+        const finalHeight = imgHeight * ratio;
+
+        // Center the image
+        const xOffset = (pageWidth - finalWidth) / 2;
+
+        doc.addImage(imgData, 'PNG', xOffset, 35, finalWidth, finalHeight);
+        flowScreenshotAdded = true;
+      } catch (err) {
+        console.warn('Could not capture flow view screenshot:', err);
+      }
+    }
+
+    // Fallback: render simplified flow view if screenshot failed
+    if (!flowScreenshotAdded) {
+      renderFlowNetworkView(doc, notes, board, connections || []);
+    }
 
     // Connection details table on next page
     if (connections && connections.length > 0) {

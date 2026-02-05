@@ -73,6 +73,7 @@ export function Dashboard({ board, readOnly = false, showShortcuts = false, show
   const [showFlowArrows, setShowFlowArrows] = useState(true);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const flowViewRef = useRef<HTMLDivElement>(null);
+  const boardViewRef = useRef<HTMLDivElement>(null);
   const [filters, setFilters] = useState<FilterState>({
     timeframe: 'all',
     category: 'all',
@@ -568,7 +569,7 @@ export function Dashboard({ board, readOnly = false, showShortcuts = false, show
           <div className={styles.exportGroup} data-tutorial="export">
             <button className={styles.filterBtn} onClick={() => exportToJSON(notes)}>JSON</button>
             <button className={styles.filterBtn} onClick={() => exportToCSV(notes)}>CSV</button>
-            <button className={styles.filterBtn} onClick={() => exportToPDF(notes, board.name, board, connections, flowViewRef.current)}>PDF</button>
+            <button className={styles.filterBtn} onClick={() => exportToPDF(notes, board.name, board, connections, flowViewRef.current, boardViewRef.current)}>PDF</button>
             <button className={styles.filterBtn} onClick={() => exportToPPTX(notes, board)}>PPTX</button>
             {!readOnly && (
               <>
@@ -608,7 +609,7 @@ export function Dashboard({ board, readOnly = false, showShortcuts = false, show
 
       {viewMode === 'board' && (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <div className={`${styles.board} ${styles.fadeIn}`} data-tutorial="board">
+          <div ref={boardViewRef} className={`${styles.board} ${styles.fadeIn}`} data-tutorial="board">
             <div className={styles.boardHeader} style={{ gridTemplateColumns: `180px repeat(${board.columns.length}, 1fr)` }}>
               <div className={styles.boardRowLabel}></div>
               {board.columns.map((col) => (
